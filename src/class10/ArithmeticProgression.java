@@ -4,6 +4,7 @@ import common.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import common.LessonContent;
 
 public class ArithmeticProgression extends Topic {
 
@@ -177,13 +178,79 @@ public class ArithmeticProgression extends Topic {
 
     @Override
     protected void teachLesson() {
-        System.out.println("Teaching: What is a Sequence?");
-        System.out.println("Teaching: What is an Arithmetic Progression?");
-        System.out.println("Teaching: First Term (a) and Common Difference (d)");
-        System.out.println("Teaching: General/nth Term formula");
-        System.out.println("Teaching: Sum of First n Terms formula");
-        System.out.println("Teaching: Arithmetic Mean");
-        // Later: replace with real explanation/example/diagram objects
+        getLessonContentBank().forEach(LessonContent::display);
+    }
+
+    private List<LessonContent> getLessonContentBank() {
+        return Arrays.asList(
+                new LessonContent(
+                        SEQUENCES,
+                        "A sequence is an ordered list of numbers that follows a specific rule or pattern, "
+                                + "where each number is called a term.",
+                        null,
+                        Arrays.asList(
+                                "2, 4, 6, 8, 10, ... follows the rule 'add 2 to the previous term'",
+                                "1, 3, 9, 27, ... follows the rule 'multiply the previous term by 3'"
+                        )
+                ),
+                new LessonContent(
+                        AP_DEFINITION,
+                        "An Arithmetic Progression (AP) is a sequence in which the difference between "
+                                + "any two consecutive terms is always the same. This constant difference is called "
+                                + "the common difference.",
+                        null,
+                        Arrays.asList(
+                                "3, 6, 9, 12, 15 is an AP because each term increases by 3",
+                                "20, 15, 10, 5 is an AP because each term decreases by 5"
+                        )
+                ),
+                new LessonContent(
+                        FIRST_TERM,
+                        "The first term of an AP, written as 'a', is simply the very first number in the sequence.",
+                        "a = first term of the sequence",
+                        Arrays.asList(
+                                "In the AP 7, 11, 15, 19, ... the first term a = 7"
+                        )
+                ),
+                new LessonContent(
+                        COMMON_DIFFERENCE,
+                        "The common difference, written as 'd', is the fixed amount added (or subtracted) "
+                                + "to get from one term to the next. Find it by subtracting any term from the term after it.",
+                        "d = (any term) - (previous term)",
+                        Arrays.asList(
+                                "In 3, 7, 11, 15, ... d = 7 - 3 = 4",
+                                "In 20, 15, 10, 5, ... d = 15 - 20 = -5"
+                        )
+                ),
+                new LessonContent(
+                        NTH_TERM,
+                        "The nth term (also called the general term) lets you find any term in the AP "
+                                + "directly, without listing every term before it.",
+                        "an = a + (n - 1)d",
+                        Arrays.asList(
+                                "For the AP 2, 5, 8, 11, ... find the 6th term: a=2, d=3, n=6 -> a6 = 2 + (6-1)(3) = 17"
+                        )
+                ),
+                new LessonContent(
+                        SUM_N_TERMS,
+                        "The sum of the first n terms adds up all terms from the first term up to the nth term, "
+                                + "using a shortcut formula instead of adding them one by one.",
+                        "Sn = n/2 x (2a + (n - 1)d)",
+                        Arrays.asList(
+                                "Sum of first 5 terms of 2, 4, 6, 8, 10: a=2, d=2, n=5 -> S5 = 5/2 x (2x2 + (5-1)x2) = 30"
+                        )
+                ),
+                new LessonContent(
+                        ARITHMETIC_MEAN,
+                        "The arithmetic mean between two numbers is the middle value that would make the "
+                                + "three numbers form an AP.",
+                        "Arithmetic Mean = (first number + second number) / 2",
+                        Arrays.asList(
+                                "Arithmetic mean of 8 and 14 = (8 + 14) / 2 = 11",
+                                "If 6, x, 18 form an AP, x = (6 + 18) / 2 = 12"
+                        )
+                )
+        );
     }
 
     @Override

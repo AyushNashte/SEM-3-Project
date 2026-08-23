@@ -52,4 +52,28 @@ public class StudentReport {
                 ", Attempts: " + attempts +
                 ", Status: " + status;
     }
+
+    public double getPrerequisiteScore() {
+        return prerequisiteScore;
+    }
+
+    public double getLessonTestScore() {
+        return lessonTestScore;
+    }
+
+    public double getRetestScore() {
+        return retestScore;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public List<Concept> getWeakConcepts() {
+        return weakConcepts;
+    }
+
+    public String getTopicName() {
+        return topicName;
+    }
 }
