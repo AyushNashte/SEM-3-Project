@@ -71,4 +71,10 @@ public abstract class Topic {
     public StudentReport getReport() {
         return report;
     }
+
+    protected abstract List<LessonContent> getLessonContentBank();
+
+    public List<LessonContent> getLessonContentForDisplay() {
+        return getLessonContentBank();
+    }
 }

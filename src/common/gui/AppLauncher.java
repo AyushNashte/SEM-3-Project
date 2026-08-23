@@ -2,6 +2,8 @@ package common.gui;
 
 import common.Topic;
 import javafx.stage.Stage;
+import java.util.List;
+import common.Concept;
 
 public class AppLauncher {
     private Stage stage;
@@ -38,5 +40,18 @@ public class AppLauncher {
     public void showReport() {
         ReportScreen screen = new ReportScreen(this, topic.getReport());
         stage.setScene(screen.buildScene());
+    }
+
+    public void showLesson() {
+        LessonScreen screen = new LessonScreen(this, topic, topic.getLessonContentForDisplay());
+        stage.setScene(screen.buildScene());
+    }
+
+    public void showLessonTest() {
+        new LessonTestScreen(this, topic).show();
+    }
+
+    public void showRetest(List<Concept> weakConcepts) {
+        new RetestScreen(this, topic, weakConcepts).show();
     }
 }

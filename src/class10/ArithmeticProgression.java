@@ -181,7 +181,8 @@ public class ArithmeticProgression extends Topic {
         getLessonContentBank().forEach(LessonContent::display);
     }
 
-    private List<LessonContent> getLessonContentBank() {
+    @Override
+    protected List<LessonContent> getLessonContentBank() {
         return Arrays.asList(
                 new LessonContent(
                         SEQUENCES,

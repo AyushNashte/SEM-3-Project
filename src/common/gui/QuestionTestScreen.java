@@ -1,6 +1,7 @@
 package common.gui;
 
-import common.*;
+import common.Question;
+import common.Test;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -8,35 +9,37 @@ import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
-public class PrerequisiteTestScreen {
-    private AppLauncher launcher;
-    private Topic topic;
+public class QuestionTestScreen {
     private Test test;
+    private String submitButtonLabel;
+    private Consumer<List<Integer>> onSubmit;
+
     private List<Integer> answers;
     private int currentIndex;
     private VBox root;
     private ToggleGroup optionGroup;
 
-    public PrerequisiteTestScreen(AppLauncher launcher, Topic topic) {
-        this.launcher = launcher;
-        this.topic = topic;
-        this.test = topic.getPrerequisiteTestForDisplay();
+    public QuestionTestScreen(Test test, String submitButtonLabel, Consumer<List<Integer>> onSubmit) {
+        this.test = test;
+        this.submitButtonLabel = submitButtonLabel;
+        this.onSubmit = onSubmit;
         this.answers = new ArrayList<>();
         this.currentIndex = 0;
     }
 
-    public Scene buildScene() {
+    public Scene buildScene(String headerPrefix) {
         root = new VBox(15);
         root.setPadding(new Insets(20));
-        showQuestion();
+        showQuestion(headerPrefix);
         return new Scene(root, 500, 400);
     }
 
-    private void showQuestion() {
+    private void showQuestion(String headerPrefix) {
         root.getChildren().clear();
 
-        Label header = new Label("Pre-requisite Test — Question "
+        Label header = new Label(headerPrefix + " — Question "
                 + (currentIndex + 1) + " of " + test.getQuestions().size());
         Question q = test.getQuestions().get(currentIndex);
         Label questionLabel = new Label(q.getQuestionText());
@@ -50,19 +53,17 @@ public class PrerequisiteTestScreen {
             optionsBox.getChildren().add(rb);
         }
 
-        Button nextButton = new Button(
-                currentIndex == test.getQuestions().size() - 1 ? "Submit" : "Next"
-        );
-        nextButton.setOnAction(e -> handleNext());
+        boolean isLast = currentIndex == test.getQuestions().size() - 1;
+        Button nextButton = new Button(isLast ? submitButtonLabel : "Next");
+        nextButton.setOnAction(e -> handleNext(headerPrefix));
 
         root.getChildren().addAll(header, questionLabel, optionsBox, nextButton);
     }
 
-    private void handleNext() {
+    private void handleNext(String headerPrefix) {
         Toggle selected = optionGroup.getSelectedToggle();
         if (selected == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Please select an answer.");
-            alert.showAndWait();
+            new Alert(Alert.AlertType.WARNING, "Please select an answer.").showAndWait();
             return;
         }
 
@@ -72,18 +73,9 @@ public class PrerequisiteTestScreen {
 
         if (currentIndex < test.getQuestions().size() - 1) {
             currentIndex++;
-            showQuestion();
+            showQuestion(headerPrefix);
         } else {
-            submitTest();
-        }
-    }
-
-    private void submitTest() {
-        TestResult result = topic.submitPrerequisiteTest(answers);
-        if (result.isPerfectScore()) {
-            launcher.showReport();
-        } else {
-            launcher.showLesson();
+            onSubmit.accept(answers);
         }
     }
 }
