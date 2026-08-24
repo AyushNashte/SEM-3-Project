@@ -1,3 +1,22 @@
-# Default ignored files
-/shelf/
-/workspace.xml
+# Compiled class files / build output
+out/
+*.class
+
+# IntelliJ IDEA — per-user files that change constantly and cause conflicts
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/httpRequests/
+.idea/dictionaries/
+.idea/**/dataSources.local.xml
+
+# Source file list (regenerated locally, not shared code)
+sources.txt
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
