@@ -1,6 +1,7 @@
 package common;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Test {
@@ -8,6 +9,19 @@ public class Test {
 
     public Test(List<Question> questions) {
         this.questions = questions;
+    }
+
+    public Test shuffled() {
+        List<Question> copy = new ArrayList<>(questions);
+        Collections.shuffle(copy);
+        return new Test(copy);
+    }
+
+    public Test pickRandom(int count) {
+        List<Question> copy = new ArrayList<>(questions);
+        Collections.shuffle(copy);
+        int actualCount = Math.min(count, copy.size());
+        return new Test(copy.subList(0, actualCount));
     }
 
     public TestResult evaluate(List<Integer> chosenAnswers) {

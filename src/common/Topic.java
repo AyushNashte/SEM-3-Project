@@ -7,6 +7,12 @@ public abstract class Topic {
     protected String topicName;
     protected StudentReport report;
 
+    private Test activePrerequisiteTest;
+    private Test activeLessonTest;
+    private Test activeRetest;
+
+    private static final int QUESTIONS_PER_ATTEMPT = 5;
+
     public Topic(String studentClass, String topicName) {
         this.studentClass = studentClass;
         this.topicName = topicName;
@@ -18,13 +24,15 @@ public abstract class Topic {
     protected abstract Test getRetest(List<Concept> weakConcepts);
     protected abstract void teachLesson();
     protected abstract void reviewConcepts(List<Concept> weakConcepts);
+    protected abstract List<LessonContent> getLessonContentBank();
 
     public Test getPrerequisiteTestForDisplay() {
-        return getPrerequisiteTest();
+        activePrerequisiteTest = getPrerequisiteTest().pickRandom(QUESTIONS_PER_ATTEMPT);
+        return activePrerequisiteTest;
     }
 
     public TestResult submitPrerequisiteTest(List<Integer> answers) {
-        TestResult result = getPrerequisiteTest().evaluate(answers);
+        TestResult result = activePrerequisiteTest.evaluate(answers);
         report.recordPrerequisiteScore(result.getPercentage());
         if (result.isPerfectScore()) {
             report.setStatus(TopicStatus.ALREADY_MASTERED);
@@ -36,12 +44,17 @@ public abstract class Topic {
         teachLesson();
     }
 
+    public List<LessonContent> getLessonContentForDisplay() {
+        return getLessonContentBank();
+    }
+
     public Test getLessonTestForDisplay() {
-        return getLessonTest();
+        activeLessonTest = getLessonTest().pickRandom(QUESTIONS_PER_ATTEMPT);
+        return activeLessonTest;
     }
 
     public TestResult submitLessonTest(List<Integer> answers) {
-        TestResult result = getLessonTest().evaluate(answers);
+        TestResult result = activeLessonTest.evaluate(answers);
         report.recordLessonTestScore(result.getPercentage(), result.getWeakConcepts());
         if (result.meetsPassingThreshold(75.0)) {
             report.setStatus(TopicStatus.COMPLETED);
@@ -53,11 +66,12 @@ public abstract class Topic {
     }
 
     public Test getRetestForDisplay(List<Concept> weakConcepts) {
-        return getRetest(weakConcepts);
+        activeRetest = getRetest(weakConcepts).pickRandom(QUESTIONS_PER_ATTEMPT);
+        return activeRetest;
     }
 
     public TestResult submitRetest(List<Concept> weakConcepts, List<Integer> answers) {
-        TestResult result = getRetest(weakConcepts).evaluate(answers);
+        TestResult result = activeRetest.evaluate(answers);
         report.recordRetestScore(result.getPercentage(), result.getWeakConcepts());
         if (result.meetsPassingThreshold(75.0)) {
             report.setStatus(TopicStatus.COMPLETED);
@@ -70,11 +84,5 @@ public abstract class Topic {
 
     public StudentReport getReport() {
         return report;
-    }
-
-    protected abstract List<LessonContent> getLessonContentBank();
-
-    public List<LessonContent> getLessonContentForDisplay() {
-        return getLessonContentBank();
     }
 }
