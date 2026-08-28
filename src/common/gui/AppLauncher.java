@@ -15,13 +15,18 @@ public class AppLauncher {
 
     public void launch() {
         stage.setTitle("EduSnap");
-
-        // Class 10 -> Arithmetic Progression hardcoded for now.
-        // Once class/topic selection screens exist, this will be chosen by the student instead.
-        topic = new class10.ArithmeticProgression();
-
-        showPrerequisiteTest();
+        showTopicSelection();
         stage.show();
+    }
+
+    public void showTopicSelection() {
+        TopicSelectionScreen screen = new TopicSelectionScreen(this);
+        stage.setScene(screen.buildScene());
+    }
+
+    public void startTopic(Topic selectedTopic) {
+        this.topic = selectedTopic;
+        showPrerequisiteTest();
     }
 
     public void showPrerequisiteTest() {
