@@ -6,6 +6,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 public class ReportScreen {
@@ -35,14 +36,31 @@ public class ReportScreen {
         Label weakLabel = new Label("Weak Concepts: " + formatWeakConcepts(report));
         weakLabel.setWrapText(true);
 
+        Button topicsButton = new Button("Back to Topics");
+        topicsButton.setOnAction(e -> launcher.showTopics());
+
         Button doneButton = new Button("Close");
         doneButton.setOnAction(e -> launcher.getStage().close());
 
-        root.getChildren().addAll(title, status, prereq, lesson, retest, attempts, weakLabel, doneButton);
+        HBox buttonContainer = new HBox(10, topicsButton, doneButton);
+
+        root.getChildren().addAll(
+                title,
+                status,
+                prereq,
+                lesson,
+                retest,
+                attempts,
+                weakLabel,
+                buttonContainer
+        );
+
         return new Scene(root, 500, 380);
     }
 
     private String formatStatus(TopicStatus status) {
+        if (status == null) return "N/A";
+
         switch (status) {
             case ALREADY_MASTERED: return "Already Mastered";
             case COMPLETED: return "Completed";

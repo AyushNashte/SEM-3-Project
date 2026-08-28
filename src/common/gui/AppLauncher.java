@@ -1,12 +1,14 @@
 package common.gui;
 
+import common.Concept;
 import common.Topic;
 import javafx.stage.Stage;
+
 import java.util.List;
-import common.Concept;
 
 public class AppLauncher {
-    private Stage stage;
+
+    private final Stage stage;
     private Topic topic;
 
     public AppLauncher(Stage stage) {
@@ -15,19 +17,50 @@ public class AppLauncher {
 
     public void launch() {
         stage.setTitle("EduSnap");
-
-        // Class 10 -> Arithmetic Progression hardcoded for now.
-        // Once class/topic selection screens exist, this will be chosen by the student instead.
-        topic = new class10.ArithmeticProgression();
-
-        showPrerequisiteTest();
+        showTopics();
         stage.show();
     }
 
-    public void showPrerequisiteTest() {
-        PrerequisiteTestScreen screen = new PrerequisiteTestScreen(this, topic);
+    // =========================
+    // TOPIC SELECTION
+    // =========================
+
+    // Your version
+    public void showTopics() {
+        TopicSelectionScreen screen = new TopicSelectionScreen(this);
         stage.setScene(screen.buildScene());
     }
+
+    // Main branch compatibility
+    public void showTopicSelection() {
+        showTopics();
+    }
+
+    // Your version
+    public void selectTopic(Topic selectedTopic) {
+        this.topic = selectedTopic;
+        showPrerequisiteTest();
+    }
+
+    // Main branch compatibility
+    public void startTopic(Topic selectedTopic) {
+        selectTopic(selectedTopic);
+    }
+
+    // =========================
+    // PREREQUISITE TEST
+    // =========================
+
+    public void showPrerequisiteTest() {
+        PrerequisiteTestScreen screen =
+                new PrerequisiteTestScreen(this, topic);
+
+        stage.setScene(screen.buildScene());
+    }
+
+    // =========================
+    // GETTERS
+    // =========================
 
     public Topic getTopic() {
         return topic;
@@ -37,19 +70,43 @@ public class AppLauncher {
         return stage;
     }
 
+    // =========================
+    // REPORT
+    // =========================
+
     public void showReport() {
-        ReportScreen screen = new ReportScreen(this, topic.getReport());
+        ReportScreen screen =
+                new ReportScreen(this, topic.getReport());
+
         stage.setScene(screen.buildScene());
     }
 
+    // =========================
+    // LESSON
+    // =========================
+
     public void showLesson() {
-        LessonScreen screen = new LessonScreen(this, topic, topic.getLessonContentForDisplay());
+        LessonScreen screen =
+                new LessonScreen(
+                        this,
+                        topic,
+                        topic.getLessonContentForDisplay()
+                );
+
         stage.setScene(screen.buildScene());
     }
+
+    // =========================
+    // LESSON TEST
+    // =========================
 
     public void showLessonTest() {
         new LessonTestScreen(this, topic).show();
     }
+
+    // =========================
+    // RETEST
+    // =========================
 
     public void showRetest(List<Concept> weakConcepts) {
         new RetestScreen(this, topic, weakConcepts).show();
