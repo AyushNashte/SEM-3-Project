@@ -53,12 +53,8 @@ public class TopicSelectionScreen {
         button.setStyle(UiStyle.BUTTON);
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(e -> {
-            Stage stage = new Stage();
             class7.Integers.MainApp app = new class7.Integers.MainApp();
-
-            stage.setTitle("Number Line Jump");
-            stage.setScene(class7.Integers.create(app));
-            stage.show();
+            launcher.getStage().setScene(class7.Integers.create(app));
         });
         return button;
     }
