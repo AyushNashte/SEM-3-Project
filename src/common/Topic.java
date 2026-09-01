@@ -85,4 +85,8 @@ public abstract class Topic {
     public StudentReport getReport() {
         return report;
     }
+
+    public java.util.Optional<String> getVisualComponentId(Concept concept) {
+        return java.util.Optional.empty();
+    }
 }

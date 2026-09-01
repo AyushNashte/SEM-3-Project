@@ -28,7 +28,12 @@ public class LessonScreen {
         root = new VBox(12);
         root.setPadding(new Insets(20));
         showConcept();
-        return new Scene(root, 550, 420);
+
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+
+        return new Scene(scrollPane, 700, 550);
     }
 
     private void showConcept() {
@@ -64,6 +69,14 @@ public class LessonScreen {
             }
         }
 
+        java.util.Optional<String> visualId = topic.getVisualComponentId(content.getConcept());
+        if (visualId.isPresent()) {
+            javafx.scene.Node visual = resolveVisual(visualId.get());
+            if (visual != null) {
+                root.getChildren().add(visual);
+            }
+        }
+
         Button nextButton = new Button(
                 currentIndex == contentBank.size() - 1 ? "Start Lesson Test" : "Next"
         );
@@ -77,6 +90,15 @@ public class LessonScreen {
             showConcept();
         } else {
             launcher.showLessonTest();
+        }
+    }
+
+    private javafx.scene.Node resolveVisual(String visualId) {
+        switch (visualId) {
+            case "ap-common-difference-explorer":
+                return new common.gui.widgets.CommonDifferenceExplorer().build();
+            default:
+                return null;
         }
     }
 }
