@@ -77,11 +77,24 @@ public class LessonScreen {
             }
         }
 
+        Button previousButton = new Button("Previous");
+        previousButton.setDisable(currentIndex == 0);
+        previousButton.setOnAction(e -> handlePrevious());
+
         Button nextButton = new Button(
                 currentIndex == contentBank.size() - 1 ? "Start Lesson Test" : "Next"
         );
         nextButton.setOnAction(e -> handleNext());
-        root.getChildren().add(nextButton);
+
+        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10, previousButton, nextButton);
+        root.getChildren().add(navigationBox);
+    }
+
+    private void handlePrevious() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showConcept();
+        }
     }
 
     private void handleNext() {

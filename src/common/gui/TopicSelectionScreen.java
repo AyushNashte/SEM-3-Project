@@ -34,17 +34,21 @@ public class TopicSelectionScreen {
         addClassSection("Class 9", topicButton("Real Numbers", class9.RealNumbers::new));
 
         // Class 10 Section
-        addClassSection("Class 10", topicButton("Arithmetic Progression", class10.ArithmeticProgression::new));
+        addClassSection("Class 10",
+                topicButton("Arithmetic Progression", class10.ArithmeticProgression::new),
+                topicButton("Quadratic Equations", () -> new class10.QuadraticEquations())
+        );
 
         return new Scene(root, 500, 450);
     }
 
-    private void addClassSection(String className, Button topicButton) {
+    private void addClassSection(String className, Button... topicButtons) {
         Label header = new Label(className);
         header.setStyle(UiStyle.HEADER);
 
         VBox section = new VBox(8);
-        section.getChildren().addAll(header, topicButton);
+        section.getChildren().add(header);
+        section.getChildren().addAll(topicButtons);
         root.getChildren().add(section);
     }
 
