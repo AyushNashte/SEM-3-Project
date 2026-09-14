@@ -36,7 +36,8 @@ public class TopicSelectionScreen {
         // Class 10 Section
         addClassSection("Class 10",
                 topicButton("Arithmetic Progression", class10.ArithmeticProgression::new),
-                topicButton("Quadratic Equations", () -> new class10.QuadraticEquations())
+                topicButton("Quadratic Equations", () -> new class10.QuadraticEquations()),
+                topicButton("Similarity", () -> new class10.Similarity())
         );
 
         return new Scene(root, 500, 450);

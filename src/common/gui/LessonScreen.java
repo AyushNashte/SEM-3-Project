@@ -110,6 +110,10 @@ public class LessonScreen {
         switch (visualId) {
             case "ap-common-difference-explorer":
                 return new common.gui.widgets.CommonDifferenceExplorer().build();
+            case "qe-parabola-explorer":
+                return new common.gui.widgets.ParabolaExplorer().build();
+            case "similarity-scale-explorer":
+                return new common.gui.widgets.SimilarityScaleExplorer().build();
             default:
                 return null;
         }

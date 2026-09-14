@@ -158,6 +158,42 @@ public class ArithmeticProgression extends Topic {
                         Arrays.asList("15", "16", "18", "20"),
                         2,
                         ARITHMETIC_MEAN
+                ),
+                new Question(
+                        "In the sequence 10, 8, 6, 4, ... what is the rule?",
+                        Arrays.asList("Add 2", "Subtract 2", "Multiply by 2", "Divide by 2"),
+                        1,
+                        SEQUENCES
+                ),
+                new Question(
+                        "Which of these is NOT a sequence (does not follow a clear rule)?",
+                        Arrays.asList("2, 4, 6, 8", "1, 3, 5, 7", "5, 2, 9, 1", "10, 20, 30, 40"),
+                        2,
+                        SEQUENCES
+                ),
+                new Question(
+                        "In the AP 12, 9, 6, 3, ... what is the first term (a)?",
+                        Arrays.asList("12", "9", "6", "3"),
+                        0,
+                        FIRST_TERM
+                ),
+                new Question(
+                        "The first term of a sequence is also called:",
+                        Arrays.asList("The last term", "The initial term of the sequence", "The common difference", "The average term"),
+                        1,
+                        FIRST_TERM
+                ),
+                new Question(
+                        "Find the sum of the first 4 terms of the AP 5, 8, 11, 14.",
+                        Arrays.asList("34", "38", "40", "44"),
+                        1,
+                        SUM_N_TERMS
+                ),
+                new Question(
+                        "Using Sn = n/2 x (2a + (n-1)d), find the sum of the first 3 terms where a=1, d=2.",
+                        Arrays.asList("6", "9", "12", "15"),
+                        1,
+                        SUM_N_TERMS
                 )
         );
     }

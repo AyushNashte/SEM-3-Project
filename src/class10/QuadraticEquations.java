@@ -150,6 +150,30 @@ public class QuadraticEquations extends Topic {
                         Arrays.asList("Real and equal", "Real and distinct", "Not real", "Undefined"),
                         0,
                         DISCRIMINANT
+                ),
+                new Question(
+                        "In the equation 3x^2 - 7 = 0, what is the value of 'b'?",
+                        Arrays.asList("3", "-7", "0", "1"),
+                        2,
+                        STANDARD_FORM
+                ),
+                new Question(
+                        "Which value of x is a root of x^2 - 4 = 0?",
+                        Arrays.asList("1", "2", "3", "4"),
+                        1,
+                        ROOTS
+                ),
+                new Question(
+                        "Factorize and solve: x^2 + 7x + 10 = 0",
+                        Arrays.asList("x = -2, -5", "x = 2, 5", "x = -2, 5", "x = 2, -5"),
+                        0,
+                        FACTORIZATION_METHOD
+                ),
+                new Question(
+                        "Using the quadratic formula, solve x^2 - 7x + 12 = 0",
+                        Arrays.asList("x = 3, 4", "x = -3, -4", "x = 2, 6", "x = 1, 12"),
+                        0,
+                        QUADRATIC_FORMULA
                 )
         );
     }
@@ -232,5 +256,13 @@ public class QuadraticEquations extends Topic {
         for (Concept c : weakConcepts) {
             System.out.println(" - " + c.getName());
         }
+    }
+
+    @Override
+    public java.util.Optional<String> getVisualComponentId(Concept concept) {
+        if (concept == STANDARD_FORM || concept == ROOTS || concept == DISCRIMINANT) {
+            return java.util.Optional.of("qe-parabola-explorer");
+        }
+        return java.util.Optional.empty();
     }
 }
