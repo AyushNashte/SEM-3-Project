@@ -37,7 +37,10 @@ public class TopicSelectionScreen {
         addClassSection("Class 10",
                 topicButton("Arithmetic Progression", class10.ArithmeticProgression::new),
                 topicButton("Quadratic Equations", () -> new class10.QuadraticEquations()),
-                topicButton("Similarity", () -> new class10.Similarity())
+                topicButton("Similarity", () -> new class10.Similarity()),
+                topicButton("Coordinate Geometry", () -> new class10.CoordinateGeometry()),
+                topicButton("Trigonometry", () -> new class10.Trigonometry()),
+                topicButton("Probability", () -> new class10.Probability())
         );
 
         return new Scene(root, 500, 450);

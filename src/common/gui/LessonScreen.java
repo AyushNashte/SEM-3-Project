@@ -114,6 +114,12 @@ public class LessonScreen {
                 return new common.gui.widgets.ParabolaExplorer().build();
             case "similarity-scale-explorer":
                 return new common.gui.widgets.SimilarityScaleExplorer().build();
+            case "coordinate-geometry-explorer":
+                return new common.gui.widgets.CoordinateGeometryExplorer().build();
+            case "trig-ratio-explorer":
+                return new common.gui.widgets.TrigRatioExplorer().build();
+            case "probability-simulator":
+                return new common.gui.widgets.ProbabilitySimulator().build();
             default:
                 return null;
         }
