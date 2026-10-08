@@ -30,6 +30,9 @@ public class TopicSelectionScreen {
         // Class 7 Section
         addClassSection("Class 7", gameButton("Integers"));
 
+        // Class 8 Section
+        addClassSection("Class 8", topicButton("Rational Numbers", class8.RationalNumbers::new));
+
         // Class 9 Section
         addClassSection("Class 9", topicButton("Real Numbers", class9.RealNumbers::new));
 
