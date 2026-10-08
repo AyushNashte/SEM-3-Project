@@ -89,4 +89,8 @@ public abstract class Topic {
     public java.util.Optional<String> getVisualComponentId(Concept concept) {
         return java.util.Optional.empty();
     }
+
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.empty();
+    }
 }

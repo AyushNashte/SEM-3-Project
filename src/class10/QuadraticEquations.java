@@ -265,4 +265,9 @@ public class QuadraticEquations extends Topic {
         }
         return java.util.Optional.empty();
     }
+
+    @Override
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("root-radar");
+    }
 }

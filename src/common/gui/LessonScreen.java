@@ -16,6 +16,7 @@ public class LessonScreen {
     private List<LessonContent> contentBank;
     private int currentIndex;
     private VBox root;
+    private Scene scene;
 
     public LessonScreen(AppLauncher launcher, Topic topic, List<LessonContent> contentBank) {
         this.launcher = launcher;
@@ -33,7 +34,8 @@ public class LessonScreen {
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
-        return new Scene(scrollPane, 700, 550);
+        scene = new Scene(scrollPane, 700, 550);
+        return scene;
     }
 
     private void showConcept() {
@@ -87,6 +89,12 @@ public class LessonScreen {
         nextButton.setOnAction(e -> handleNext());
 
         javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10, previousButton, nextButton);
+        java.util.Optional<String> gameId = topic.getGameId();
+        if (gameId.isPresent()) {
+            Button playButton = new Button("🎮 Play Game");
+            playButton.setOnAction(e -> openGame(gameId.get()));
+            navigationBox.getChildren().add(playButton);
+        }
         root.getChildren().add(navigationBox);
     }
 
@@ -120,6 +128,24 @@ public class LessonScreen {
                 return new common.gui.widgets.TrigRatioExplorer().build();
             case "probability-simulator":
                 return new common.gui.widgets.ProbabilitySimulator().build();
+            default:
+                return null;
+        }
+    }
+
+    private void openGame(String gameId) {
+        common.gui.games.ArcadeGame game = resolveGame(gameId);
+        if (game == null) return;
+        Scene lessonScene = scene;
+        launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
+    }
+
+    private common.gui.games.ArcadeGame resolveGame(String gameId) {
+        switch (gameId) {
+            case "coordinate-radar":
+                return new common.gui.games.CoordinateRadarGame();
+            case "root-radar":
+                return new common.gui.games.RootRadarGame();
             default:
                 return null;
         }
