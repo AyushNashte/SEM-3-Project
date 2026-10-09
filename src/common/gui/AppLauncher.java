@@ -10,6 +10,7 @@ public class AppLauncher {
 
     private final Stage stage;
     private Topic topic;
+    private String selectedClass;
 
     public AppLauncher(Stage stage) {
         this.stage = stage;
@@ -17,18 +18,37 @@ public class AppLauncher {
 
     public void launch() {
         stage.setTitle("EduSnap");
-        showTopics();
+        stage.setMinWidth(900);
+        stage.setMinHeight(600);
+        stage.setWidth(1150);
+        stage.setHeight(720);
+        stage.centerOnScreen();
+        // stage.setMaximized(true);   // uncomment to start full-screen instead
+        showHome();
         stage.show();
     }
 
     // =========================
-    // TOPIC SELECTION
+    // HOME / CLASS / TOPIC SELECTION
     // =========================
 
-    // Your version
+    public void showHome() {
+        selectedClass = null;
+        stage.setScene(new HomeScreen(this).buildScene());
+    }
+
+    public void showClass(String className) {
+        selectedClass = className;
+        stage.setScene(new ClassTopicsScreen(this, className).buildScene());
+    }
+
+    // Back to Topics buttons land on the class you were in (or Home if none)
     public void showTopics() {
-        TopicSelectionScreen screen = new TopicSelectionScreen(this);
-        stage.setScene(screen.buildScene());
+        if (selectedClass == null) {
+            showHome();
+        } else {
+            showClass(selectedClass);
+        }
     }
 
     // Main branch compatibility
@@ -36,7 +56,6 @@ public class AppLauncher {
         showTopics();
     }
 
-    // Your version
     public void selectTopic(Topic selectedTopic) {
         this.topic = selectedTopic;
         showPrerequisiteTest();
