@@ -31,7 +31,14 @@ public class TopicSelectionScreen {
         addClassSection("Class 7", gameButton("Integers"));
 
         // Class 8 Section
-        addClassSection("Class 8", topicButton("Rational Numbers", class8.RationalNumbers::new));
+        addClassSection("Class 8",
+                topicButton("Rational Numbers", class8.RationalNumbers::new),
+                topicButton("Exponents", class8.Exponents::new),
+                topicButton("Factorisation", class8.Factorisation::new),
+                topicButton("Linear Equations", class8.LinearEquations::new),
+                topicButton("Percentage & Financial Maths", class8.PercentageAndFinancialMaths::new),
+                topicButton("Mensuration", class8.Mensuration::new)
+        );
 
         // Class 9 Section
         addClassSection("Class 9", topicButton("Real Numbers", class9.RealNumbers::new));
