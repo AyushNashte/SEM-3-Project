@@ -23,14 +23,11 @@ public class AppLauncher {
         stage.setWidth(1150);
         stage.setHeight(720);
         stage.centerOnScreen();
-        // stage.setMaximized(true);   // uncomment to start full-screen instead
         showHome();
         stage.show();
     }
 
-    // =========================
     // HOME / CLASS / TOPIC SELECTION
-    // =========================
 
     public void showHome() {
         selectedClass = null;
@@ -66,9 +63,7 @@ public class AppLauncher {
         selectTopic(selectedTopic);
     }
 
-    // =========================
     // PREREQUISITE TEST
-    // =========================
 
     public void showPrerequisiteTest() {
         PrerequisiteTestScreen screen =
@@ -77,9 +72,7 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // GETTERS
-    // =========================
 
     public Topic getTopic() {
         return topic;
@@ -89,9 +82,7 @@ public class AppLauncher {
         return stage;
     }
 
-    // =========================
     // REPORT
-    // =========================
 
     public void showReport() {
         ReportScreen screen =
@@ -100,9 +91,7 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // LESSON
-    // =========================
 
     public void showLesson() {
         LessonScreen screen =
@@ -115,17 +104,13 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // LESSON TEST
-    // =========================
 
     public void showLessonTest() {
         new LessonTestScreen(this, topic).show();
     }
 
-    // =========================
     // RETEST
-    // =========================
 
     public void showRetest(List<Concept> weakConcepts) {
         new RetestScreen(this, topic, weakConcepts).show();

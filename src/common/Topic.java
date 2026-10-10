@@ -90,7 +90,19 @@ public abstract class Topic {
         return java.util.Optional.empty();
     }
 
+    /** Return an id (e.g. "exponent-tower") if this topic has a game; the lesson screen shows a Play Game button. */
     public java.util.Optional<String> getGameId() {
         return java.util.Optional.empty();
+    }
+
+    /**
+     * Opens this topic's game without blocking the caller.
+     * onFinished is called when the game window closes.
+     * Topics without a game just continue immediately.
+     */
+    public void launchGame(Runnable onFinished) {
+        if (onFinished != null) {
+            onFinished.run();
+        }
     }
 }

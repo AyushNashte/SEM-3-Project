@@ -1,9 +1,11 @@
 package class10;
 
 import common.*;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import common.LessonContent;
 
 public class ArithmeticProgression extends Topic {
