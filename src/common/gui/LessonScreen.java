@@ -1,5 +1,7 @@
 package common.gui;
 
+import class10.games.CoordinateRadarGame;
+import class10.games.RootRadarGame;
 import common.LessonContent;
 import common.Topic;
 import javafx.geometry.Insets;
@@ -71,13 +73,6 @@ public class LessonScreen {
             }
         }
 
-        java.util.Optional<String> visualId = topic.getVisualComponentId(content.getConcept());
-        if (visualId.isPresent()) {
-            javafx.scene.Node visual = resolveVisual(visualId.get());
-            if (visual != null) {
-                root.getChildren().add(visual);
-            }
-        }
 
         Button previousButton = new Button("Previous");
         previousButton.setDisable(currentIndex == 0);
@@ -114,25 +109,6 @@ public class LessonScreen {
         }
     }
 
-    private javafx.scene.Node resolveVisual(String visualId) {
-        switch (visualId) {
-            case "ap-common-difference-explorer":
-                return new common.gui.widgets.CommonDifferenceGame().build();
-            case "qe-parabola-explorer":
-                return new common.gui.widgets.ParabolaGame().build();
-            case "similarity-scale-explorer":
-                return new common.gui.widgets.SimilarityShapeMatchGame().build();
-            case "coordinate-geometry-explorer":
-                return new common.gui.widgets.CoordinateGeometryExplorer().build();
-            case "trig-ratio-explorer":
-                return new common.gui.widgets.TrigRatioExplorer().build();
-            case "probability-simulator":
-                return new common.gui.widgets.ProbabilitySimulator().build();
-            default:
-                return null;
-        }
-    }
-
     private void openGame(String gameId) {
         common.gui.games.ArcadeGame game = resolveGame(gameId);
         if (game == null) return;
@@ -143,9 +119,9 @@ public class LessonScreen {
     private common.gui.games.ArcadeGame resolveGame(String gameId) {
         switch (gameId) {
             case "coordinate-radar":
-                return new common.gui.games.CoordinateRadarGame();
+                return new CoordinateRadarGame();
             case "root-radar":
-                return new common.gui.games.RootRadarGame();
+                return new RootRadarGame();
             default:
                 return null;
         }
