@@ -146,6 +146,10 @@ public class LessonScreen {
                 return new common.gui.games.CoordinateRadarGame();
             case "root-radar":
                 return new common.gui.games.RootRadarGame();
+            case "integer-hopper":
+                return new class7.games.IntegerHopperGame();
+            case "fraction-fisher":
+                return new class7.games.FractionFisherGame();
             default:
                 return null;
         }
