@@ -71,14 +71,6 @@ public class LessonScreen {
             }
         }
 
-        java.util.Optional<String> visualId = topic.getVisualComponentId(content.getConcept());
-        if (visualId.isPresent()) {
-            javafx.scene.Node visual = resolveVisual(visualId.get());
-            if (visual != null) {
-                root.getChildren().add(visual);
-            }
-        }
-
         Button previousButton = new Button("Previous");
         previousButton.setDisable(currentIndex == 0);
         previousButton.setOnAction(e -> handlePrevious());
@@ -114,7 +106,6 @@ public class LessonScreen {
         }
     }
 
-
     private void openGame(String gameId) {
         common.gui.games.ArcadeGame game = resolveGame(gameId);
         if (game == null) return;
@@ -125,9 +116,9 @@ public class LessonScreen {
     private common.gui.games.ArcadeGame resolveGame(String gameId) {
         switch (gameId) {
             case "coordinate-radar":
-                return new common.gui.games.CoordinateRadarGame();
+                return new class10.games.CoordinateRadarGame();
             case "root-radar":
-                return new common.gui.games.RootRadarGame();
+                return new class10.games.RootRadarGame();
             case "integer-hopper":
                 return new class7.games.IntegerHopperGame();
             case "fraction-fisher":
