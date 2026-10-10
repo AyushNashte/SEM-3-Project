@@ -4,10 +4,12 @@ import class10.games.CoordinateRadarGame;
 import class10.games.RootRadarGame;
 import common.LessonContent;
 import common.Topic;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -19,6 +21,11 @@ public class LessonScreen {
     private int currentIndex;
     private VBox root;
     private Scene scene;
+    private ScrollPane scrollPane;
+
+    // Play Game button state (the topic's own game window, e.g. Exponent Tower)
+    private Button playButton;
+    private boolean gameRunning = false;
 
     public LessonScreen(AppLauncher launcher, Topic topic, List<LessonContent> contentBank) {
         this.launcher = launcher;
@@ -32,7 +39,7 @@ public class LessonScreen {
         root.setPadding(new Insets(20));
         showConcept();
 
-        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(root);
+        scrollPane = new ScrollPane(root);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
@@ -42,6 +49,15 @@ public class LessonScreen {
 
     private void showConcept() {
         root.getChildren().clear();
+
+        if (contentBank == null || contentBank.isEmpty()) {
+            root.getChildren().add(new Label("No lesson content available for this topic."));
+            Button testButton = new Button("Start Lesson Test");
+            testButton.setOnAction(e -> launcher.showLessonTest());
+            root.getChildren().add(testButton);
+            return;
+        }
+
         LessonContent content = contentBank.get(currentIndex);
 
         Label header = new Label("Lesson — " + (currentIndex + 1) + " of " + contentBank.size());
@@ -84,13 +100,21 @@ public class LessonScreen {
         nextButton.setOnAction(e -> handleNext());
 
         javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10, previousButton, nextButton);
+
+        playButton = null;
         java.util.Optional<String> gameId = topic.getGameId();
         if (gameId.isPresent()) {
-            Button playButton = new Button("🎮 Play Game");
+            playButton = new Button("🎮 Play Game");
             playButton.setOnAction(e -> openGame(gameId.get()));
+            updatePlayButton();
             navigationBox.getChildren().add(playButton);
         }
         root.getChildren().add(navigationBox);
+
+        // Start each concept page from the top
+        if (scrollPane != null) {
+            scrollPane.setVvalue(0);
+        }
     }
 
     private void handlePrevious() {
@@ -110,10 +134,36 @@ public class LessonScreen {
     }
 
     private void openGame(String gameId) {
+        // 1) JavaFX arcade games that swap the scene inside this window
         common.gui.games.ArcadeGame game = resolveGame(gameId);
-        if (game == null) return;
-        Scene lessonScene = scene;
-        launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
+        if (game != null) {
+            Scene lessonScene = scene;
+            launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
+            return;
+        }
+
+        // 2) Games that open in their own window (e.g. Class 8 "exponent-tower").
+        //    The topic launches it; we re-enable the button when the game window closes.
+        if (gameRunning) return; // don't open two game windows
+
+        gameRunning = true;
+        updatePlayButton();
+        try {
+            topic.launchGame(() -> Platform.runLater(() -> {
+                gameRunning = false;
+                updatePlayButton();
+            }));
+        } catch (Throwable t) {
+            t.printStackTrace();
+            gameRunning = false;
+            updatePlayButton();
+        }
+    }
+
+    private void updatePlayButton() {
+        if (playButton == null) return;
+        playButton.setDisable(gameRunning);
+        playButton.setText(gameRunning ? "🎮 Game running..." : "🎮 Play Game");
     }
 
     private common.gui.games.ArcadeGame resolveGame(String gameId) {
@@ -123,7 +173,7 @@ public class LessonScreen {
             case "root-radar":
                 return new RootRadarGame();
             default:
-                return null;
+                return null; // not a scene-swap game; handled by topic.launchGame(...)
         }
     }
 }
