@@ -3,6 +3,9 @@ package common.gui;
 import common.Concept;
 import common.Topic;
 import javafx.stage.Stage;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 
 import java.util.List;
 
@@ -114,5 +117,18 @@ public class AppLauncher {
 
     public void showRetest(List<Concept> weakConcepts) {
         new RetestScreen(this, topic, weakConcepts).show();
+    }
+
+    public Button createBackButton(String warning) {
+        Button back = new Button("← Back to Topics");
+        back.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, warning, ButtonType.YES, ButtonType.NO);
+            confirm.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.YES) {
+                    showTopics();
+                }
+            });
+        });
+        return back;
     }
 }

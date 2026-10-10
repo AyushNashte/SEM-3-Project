@@ -55,7 +55,9 @@ public class PrerequisiteTestScreen {
         );
         nextButton.setOnAction(e -> handleNext());
 
-        root.getChildren().addAll(header, questionLabel, optionsBox, nextButton);
+        root.getChildren().addAll(
+                launcher.createBackButton("Your progress on this test will be lost. Go back to Topics?"),
+                header, questionLabel, optionsBox, nextButton);
     }
 
     private void handleNext() {

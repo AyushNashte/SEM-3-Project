@@ -80,7 +80,9 @@ public class LessonScreen {
         );
         nextButton.setOnAction(e -> handleNext());
 
-        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10, previousButton, nextButton);
+        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10,
+                launcher.createBackButton("Your lesson progress will be lost. Go back to Topics?"),
+                previousButton, nextButton);
         java.util.Optional<String> gameId = topic.getGameId();
         if (gameId.isPresent()) {
             Button playButton = new Button("🎮 Play Game");
