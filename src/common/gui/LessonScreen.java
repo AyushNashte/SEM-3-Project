@@ -123,6 +123,10 @@ public class LessonScreen {
                 return new class7.games.IntegerHopperGame();
             case "fraction-fisher":
                 return new class7.games.FractionFisherGame();
+            case "term-catcher":
+                return new class7.games.TermCatcherGame();
+            case "smoothie-rush":
+                return new class7.games.SmoothieRushGame();
             default:
                 return null;
         }

@@ -38,6 +38,8 @@ public class ClassCatalog {
         List<Entry> list7 = new ArrayList<>();
         list7.add(topic("🔢", "Integers", class7.Integers::new));
         list7.add(topic("🍕", "Fractions & Decimals", Integers.FractionsAndDecimals::new));
+        list7.add(topic("🔤", "Algebraic Expressions", class7.AlgebraicExpressions::new));
+        list7.add(topic("⚖️", "Ratio & Proportion", class7.RatioAndProportion::new));
         classes.put("Class 7", list7);
 
         List<Entry> list8 = new ArrayList<>();
