@@ -2,19 +2,20 @@ package class8;
 
 import common.*;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 /**
- * Educational Topic Class combined with Interactive Game
- * Semester 3 OOP Project
+ * Class 8 Mathematics - Exponents
+ * Prerequisite test -> Lesson (with playable game) -> Lesson test
  */
 public class Exponents extends Topic {
 
@@ -54,20 +55,42 @@ public class Exponents extends Topic {
     }
 
     // ==============================================================================
-    // 2. LESSON
+    // 2. LESSON (+ GAME)
     // ==============================================================================
+
+    /**
+     * Console flow only. The JavaFX screens do NOT call this; they use
+     * getLessonContentForDisplay() and the Play Game button (getGameId / launchGame).
+     */
     @Override
     protected void teachLesson() {
-        // Step 1: Display the lesson content
         getLessonContentBank().forEach(LessonContent::display);
 
-        // Step 2: Transition into the Interactive Game
+        // Never block the JavaFX thread (it would freeze the whole app)
+        if (isJavaFxThread() || GraphicsEnvironment.isHeadless()) {
+            return;
+        }
+
         System.out.println("\n=======================================================");
         System.out.println("   LESSON COMPLETE. LAUNCHING INTERACTIVE GAME...      ");
         System.out.println("   (Please check for a new window to play the game)    ");
         System.out.println("=======================================================\n");
 
-        playGameAndWait();
+        CountDownLatch done = new CountDownLatch(1);
+        launchGame(done::countDown);
+        try {
+            done.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("=======================================================");
+        System.out.println("   GAME FINISHED. PROCEEDING TO MAIN TEST...           ");
+        System.out.println("=======================================================\n");
+    }
+
+    private boolean isJavaFxThread() {
+        return Thread.currentThread().getName().startsWith("JavaFX");
     }
 
     @Override
@@ -97,38 +120,44 @@ public class Exponents extends Topic {
     }
 
     // ==============================================================================
-    // 3. GAME (Launch and Thread Blocking)
+    // 3. GAME HOOKS (used by the JavaFX LessonScreen "Play Game" button)
     // ==============================================================================
-    private void playGameAndWait() {
-        // A lock object to pause the console while the GUI runs
-        final Object lock = new Object();
+    @Override
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("exponent-tower");
+    }
+
+    /**
+     * Opens the game window WITHOUT blocking the caller.
+     * onFinished runs when the game window is closed (or if it fails to open).
+     */
+    @Override
+    public void launchGame(Runnable onFinished) {
+        final Runnable callback = (onFinished != null) ? onFinished : () -> { };
+
+        if (GraphicsEnvironment.isHeadless()) {
+            callback.run();
+            return;
+        }
 
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception e) { }
+            } catch (Exception ignored) { }
 
-            // Pass the lock to the game window
-            ExponentTowerGUI game = new ExponentTowerGUI(lock);
-            game.setVisible(true);
-        });
-
-        // Block the console thread until the game window calls lock.notify()
-        synchronized (lock) {
             try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                ExponentTowerGUI game = new ExponentTowerGUI(callback);
+                game.setVisible(true);
+                game.toFront();
+            } catch (Throwable t) {
+                t.printStackTrace();
+                callback.run(); // never leave the caller waiting
             }
-        }
-
-        System.out.println("=======================================================");
-        System.out.println("   GAME FINISHED. PROCEEDING TO MAIN TEST...           ");
-        System.out.println("=======================================================\n");
+        });
     }
 
     // ==============================================================================
-    // 4. MAIN TEST
+    // 4. MAIN (LESSON) TEST
     // ==============================================================================
     @Override
     protected Test getLessonTest() {
@@ -176,7 +205,7 @@ public class Exponents extends Topic {
 }
 
 // ==============================================================================
-// GAME GUI CLASS (Included in same file)
+// GAME GUI CLASS (Swing) - included in the same file
 // ==============================================================================
 class ExponentTowerGUI extends JFrame {
 
@@ -190,7 +219,9 @@ class ExponentTowerGUI extends JFrame {
     private final int MAX_TIME_MS = 15000;
     private int timeRemainingMs = MAX_TIME_MS;
     private Timer gameLoopTimer;
-    private final Object threadLock; // Reference to the lock
+
+    private final Runnable onFinished;
+    private boolean finishedNotified = false;
 
     private final TowerPanel towerPanel;
     private final JLabel statusLabel;
@@ -199,21 +230,21 @@ class ExponentTowerGUI extends JFrame {
     private final JButton attackButton;
     private final JLabel feedbackLabel;
 
-    public ExponentTowerGUI(Object lock) {
-        this.threadLock = lock;
+    private static final String DEFAULT_HELP = "Enter the missing exponent (x) - it can be negative or zero!";
+
+    public ExponentTowerGUI(Runnable onFinished) {
+        this.onFinished = onFinished;
 
         setTitle("Class 8 Math Project: Exponent Tower OVERDRIVE");
         setSize(900, 700);
 
-        // When user closes the game, notify the console thread to resume the Main Test
+        // When the game window closes, tell the lesson screen / console to continue
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosed(java.awt.event.WindowEvent windowEvent) {
                 if (gameLoopTimer != null) gameLoopTimer.stop();
-                synchronized (threadLock) {
-                    threadLock.notify(); // Wake up the console
-                }
+                notifyFinished();
             }
         });
 
@@ -238,7 +269,7 @@ class ExponentTowerGUI extends JFrame {
         JPanel qPanel = new JPanel(new GridLayout(2, 1));
         qPanel.setOpaque(false);
         questionLabel = createStyledLabel("Loading Guardian...", new Color(255, 215, 0), 28);
-        feedbackLabel = createStyledLabel("Enter the missing exponent (x) before time runs out!", Color.LIGHT_GRAY, 14);
+        feedbackLabel = createStyledLabel(DEFAULT_HELP, Color.LIGHT_GRAY, 14);
         qPanel.add(questionLabel);
         qPanel.add(feedbackLabel);
         bottomContainer.add(qPanel, BorderLayout.NORTH);
@@ -276,6 +307,19 @@ class ExponentTowerGUI extends JFrame {
         startGameLoop();
     }
 
+    /** Makes sure the "game finished" callback runs only once. */
+    private void notifyFinished() {
+        if (finishedNotified) return;
+        finishedNotified = true;
+        if (onFinished != null) {
+            try {
+                onFinished.run();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
     private JLabel createStyledLabel(String text, Color color, int size) {
         JLabel label = new JLabel(text, SwingConstants.CENTER);
         label.setForeground(color);
@@ -301,9 +345,10 @@ class ExponentTowerGUI extends JFrame {
         feedbackLabel.setText("TIME OUT! The Guardian struck you! " + currentProblem.getHint());
         feedbackLabel.setForeground(new Color(235, 87, 87));
         towerPanel.shakeAnimation();
-        towerPanel.spawnFloatingText("TOO SLOW!", towerPanel.getWidth()/2, towerPanel.getHeight()/2, Color.RED);
+        towerPanel.spawnFloatingText("TOO SLOW!", towerPanel.getWidth() / 2, towerPanel.getHeight() / 2, Color.RED);
 
         if (lives <= 0) {
+            updateStatus();
             triggerGameOver();
         } else {
             generateNextFloor();
@@ -314,7 +359,7 @@ class ExponentTowerGUI extends JFrame {
         currentProblem = new ExponentProblem(currentFloor);
         questionLabel.setText("Solve: " + currentProblem.getQuestionString());
         answerField.setText("");
-        answerField.requestFocus();
+        answerField.requestFocusInWindow();
 
         timeRemainingMs = Math.max(MAX_TIME_MS - (currentFloor * 200), 5000);
         updateStatus();
@@ -328,16 +373,18 @@ class ExponentTowerGUI extends JFrame {
             int playerAnswer = Integer.parseInt(answerField.getText().trim());
 
             if (playerAnswer == currentProblem.getCorrectAnswer()) {
-                long basePower = (long) Math.pow(currentProblem.getBase(), Math.abs(playerAnswer));
-                if(basePower == 0) basePower = 10;
+                // Cap the power so it can never overflow into negative numbers
+                double rawPower = Math.pow(currentProblem.getBase(), Math.min(Math.abs(playerAnswer), 20));
+                long basePower = (long) Math.min(rawPower, 100000.0);
                 long powerGained = basePower * combo;
 
                 totalPowerPoints += powerGained;
-                feedbackLabel.setText("NICE! Base " + currentProblem.getBase() + "^" + Math.abs(playerAnswer) + " x Combo " + combo + " = +" + powerGained + " Power!");
+                feedbackLabel.setText("NICE! Base " + currentProblem.getBase() + "^" + Math.abs(playerAnswer)
+                        + " x Combo " + combo + " = +" + powerGained + " Power!");
                 feedbackLabel.setForeground(new Color(102, 252, 241));
 
                 towerPanel.fireLaserAnimation();
-                towerPanel.spawnFloatingText("+" + powerGained, towerPanel.getWidth()/2, 100, new Color(102, 252, 241));
+                towerPanel.spawnFloatingText("+" + powerGained, towerPanel.getWidth() / 2, 100, new Color(102, 252, 241));
 
                 combo++;
                 currentFloor++;
@@ -349,7 +396,7 @@ class ExponentTowerGUI extends JFrame {
                 feedbackLabel.setText("WRONG! Guardian blocked it! " + currentProblem.getHint());
                 feedbackLabel.setForeground(new Color(235, 87, 87));
                 towerPanel.shakeAnimation();
-                towerPanel.spawnFloatingText("BLOCKED!", towerPanel.getWidth()/2, 100, Color.RED);
+                towerPanel.spawnFloatingText("BLOCKED!", towerPanel.getWidth() / 2, 100, Color.RED);
                 updateStatus();
 
                 if (lives <= 0) {
@@ -361,7 +408,7 @@ class ExponentTowerGUI extends JFrame {
             feedbackLabel.setForeground(Color.ORANGE);
         }
         answerField.setText("");
-        answerField.requestFocus();
+        answerField.requestFocusInWindow();
     }
 
     private void triggerGameOver() {
@@ -376,7 +423,7 @@ class ExponentTowerGUI extends JFrame {
         if (opt == JOptionPane.YES_OPTION) {
             resetGame();
         } else {
-            dispose(); // Closes the GUI, automatically waking up the console for Step 4
+            dispose(); // closes the game; windowClosed tells the app to continue
         }
     }
 
@@ -385,7 +432,7 @@ class ExponentTowerGUI extends JFrame {
         lives = maxLives;
         totalPowerPoints = 0;
         combo = 1;
-        feedbackLabel.setText("Enter the missing exponent (x) before time runs out!");
+        feedbackLabel.setText(DEFAULT_HELP);
         feedbackLabel.setForeground(Color.LIGHT_GRAY);
         generateNextFloor();
         gameLoopTimer.start();
@@ -395,6 +442,9 @@ class ExponentTowerGUI extends JFrame {
         statusLabel.setText(String.format("Floor: %d  |  Combo: x%d  |  Power: %d", currentFloor, combo, totalPowerPoints));
     }
 
+    // ------------------------------------------------------------------
+    // Problem generator
+    // ------------------------------------------------------------------
     static class ExponentProblem {
         private final int base;
         private final int correctAnswer;
@@ -429,6 +479,12 @@ class ExponentTowerGUI extends JFrame {
         public String getHint() { return hint; }
     }
 
+    // ------------------------------------------------------------------
+    // Drawing panel
+    // ------------------------------------------------------------------
+    private static int alpha(int life) {
+        return Math.max(0, Math.min(255, life * 5));
+    }
 
     class TowerPanel extends JPanel {
         private boolean isFiringLaser = false;
@@ -446,7 +502,7 @@ class ExponentTowerGUI extends JFrame {
 
         public void setGuardianColor(int floor) {
             Random r = new Random(floor);
-            guardianColor = new Color(r.nextInt(155)+100, r.nextInt(155)+100, r.nextInt(155)+100);
+            guardianColor = new Color(r.nextInt(155) + 100, r.nextInt(155) + 100, r.nextInt(155) + 100);
         }
 
         public void fireLaserAnimation() {
@@ -455,7 +511,7 @@ class ExponentTowerGUI extends JFrame {
 
             int cx = getWidth() / 2;
             int ey = 100;
-            for(int i=0; i<30; i++) {
+            for (int i = 0; i < 30; i++) {
                 particles.add(new Particle(cx, ey, new Color(102, 252, 241)));
             }
         }
@@ -464,7 +520,7 @@ class ExponentTowerGUI extends JFrame {
             shakeOffset = 15;
             int cx = getWidth() / 2;
             int py = getHeight() - 80;
-            for(int i=0; i<15; i++) {
+            for (int i = 0; i < 15; i++) {
                 particles.add(new Particle(cx, py, Color.RED));
             }
         }
@@ -516,7 +572,7 @@ class ExponentTowerGUI extends JFrame {
 
             g2d.setColor(new Color(25, 25, 40));
             g2d.setStroke(new BasicStroke(1));
-            for (int i = (int)scrollY; i < h; i += 60) g2d.drawLine(0, i, w, i);
+            for (int i = (int) scrollY; i < h; i += 60) g2d.drawLine(0, i, w, i);
             for (int i = 0; i < w; i += 60) g2d.drawLine(i, 0, i, h);
 
             g2d.setColor(new Color(35, 35, 45));
@@ -527,7 +583,7 @@ class ExponentTowerGUI extends JFrame {
             g2d.drawLine(centerX + 90, 0, centerX + 90, h);
             g2d.drawLine(centerX, 0, centerX, h);
 
-            int hoverOffset = (int)(Math.sin(System.currentTimeMillis() * 0.005) * 10);
+            int hoverOffset = (int) (Math.sin(System.currentTimeMillis() * 0.005) * 10);
             int enemyY = 80 + hoverOffset;
 
             g2d.setColor(guardianColor);
@@ -560,20 +616,21 @@ class ExponentTowerGUI extends JFrame {
             }
 
             for (Particle p : particles) {
-                g2d.setColor(new Color(p.color.getRed(), p.color.getGreen(), p.color.getBlue(), Math.max(0, p.life * 5)));
-                g2d.fillRect((int)p.x, (int)p.y, p.size, p.size);
+                g2d.setColor(new Color(p.color.getRed(), p.color.getGreen(), p.color.getBlue(), alpha(p.life)));
+                g2d.fillRect((int) p.x, (int) p.y, p.size, p.size);
             }
 
             g2d.setFont(new Font("Monospaced", Font.BOLD, 22));
             for (FloatingText ft : floatingTexts) {
-                g2d.setColor(new Color(ft.color.getRed(), ft.color.getGreen(), ft.color.getBlue(), Math.max(0, ft.life * 5)));
-                g2d.drawString(ft.text, (int)ft.x - (g2d.getFontMetrics().stringWidth(ft.text) / 2), (int)ft.y);
+                g2d.setColor(new Color(ft.color.getRed(), ft.color.getGreen(), ft.color.getBlue(), alpha(ft.life)));
+                g2d.drawString(ft.text, (int) ft.x - (g2d.getFontMetrics().stringWidth(ft.text) / 2), (int) ft.y);
             }
 
             g2d.translate(-shakeOffset, 0);
 
+            g2d.setStroke(new BasicStroke(1));
             g2d.setColor(new Color(235, 87, 87));
-            for(int i=0; i<maxLives; i++) {
+            for (int i = 0; i < maxLives; i++) {
                 if (i < lives) g2d.fillRect(20 + (i * 35), h - 40, 25, 25);
                 else g2d.drawRect(20 + (i * 35), h - 40, 25, 25);
             }
@@ -586,12 +643,12 @@ class ExponentTowerGUI extends JFrame {
             g2d.setColor(new Color(50, 50, 50));
             g2d.fillRect(barX, barY, barWidth, barHeight);
 
-            double timeRatio = (double)timeRemainingMs / MAX_TIME_MS;
-            if(timeRatio > 0.5) g2d.setColor(new Color(76, 175, 80));
+            double timeRatio = Math.max(0.0, Math.min(1.0, (double) timeRemainingMs / MAX_TIME_MS));
+            if (timeRatio > 0.5) g2d.setColor(new Color(76, 175, 80));
             else if (timeRatio > 0.25) g2d.setColor(new Color(255, 193, 7));
             else g2d.setColor(new Color(235, 87, 87));
 
-            g2d.fillRect(barX, barY, (int)(barWidth * timeRatio), barHeight);
+            g2d.fillRect(barX, barY, (int) (barWidth * timeRatio), barHeight);
             g2d.setColor(Color.WHITE);
             g2d.drawRect(barX, barY, barWidth, barHeight);
         }
@@ -606,8 +663,8 @@ class ExponentTowerGUI extends JFrame {
             this.x = x; this.y = y; this.color = c;
             this.vx = (Math.random() - 0.5) * 15;
             this.vy = (Math.random() - 0.5) * 15;
-            this.life = 30 + (int)(Math.random() * 20);
-            this.size = 4 + (int)(Math.random() * 6);
+            this.life = 30 + (int) (Math.random() * 20);
+            this.size = 4 + (int) (Math.random() * 6);
         }
         public void update() {
             x += vx; y += vy;
