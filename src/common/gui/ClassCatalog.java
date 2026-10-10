@@ -35,10 +35,7 @@ public class ClassCatalog {
         Map<String, List<Entry>> classes = new LinkedHashMap<>();
 
         List<Entry> list7 = new ArrayList<>();
-        list7.add(new Entry("🔢", "Integers", launcher -> {
-            class7.Integers.MainApp app = new class7.Integers.MainApp();
-            launcher.getStage().setScene(class7.Integers.create(app));
-        }));
+        list7.add(topic("🔢", "Integers", class7.Integers::new));
         classes.put("Class 7", list7);
 
         List<Entry> list8 = new ArrayList<>();

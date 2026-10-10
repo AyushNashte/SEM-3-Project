@@ -1,6 +1,7 @@
 package common.gui;
 
 import common.Topic;
+
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -28,7 +29,7 @@ public class TopicSelectionScreen {
         root.getChildren().add(title);
 
         // Class 7 Section
-        addClassSection("Class 7", gameButton("Integers"));
+        addClassSection("Class 7", topicButton("Integers", class7.Integers::new));
 
         // Class 8 Section
         addClassSection("Class 8",
@@ -64,17 +65,6 @@ public class TopicSelectionScreen {
         section.getChildren().add(header);
         section.getChildren().addAll(topicButtons);
         root.getChildren().add(section);
-    }
-
-    private Button gameButton(String label) {
-        Button button = new Button(label);
-        button.setStyle(UiStyle.BUTTON);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setOnAction(e -> {
-            class7.Integers.MainApp app = new class7.Integers.MainApp();
-            launcher.getStage().setScene(class7.Integers.create(app));
-        });
-        return button;
     }
 
     private Button topicButton(String label, Supplier<Topic> topicSupplier) {
