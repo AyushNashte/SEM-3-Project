@@ -110,7 +110,11 @@ public class LessonScreen {
 
     private void openGame(String gameId) {
         common.gui.games.ArcadeGame game = resolveGame(gameId);
-        if (game == null) return;
+        if (game == null) {
+            // Not a JavaFX arcade game: Class 8 topics open their own game window
+            topic.launchGame(() -> { });
+            return;
+        }
         Scene lessonScene = scene;
         launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
     }
