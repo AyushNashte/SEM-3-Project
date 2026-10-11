@@ -121,6 +121,8 @@ public class LessonScreen {
                 return new class10.games.CoordinateRadarGame();
             case "root-radar":
                 return new class10.games.RootRadarGame();
+            case "ap-express":
+                return new class10.games.APExpressGame();
             case "integer-hopper":
                 return new class7.games.IntegerHopperGame();
             case "fraction-fisher":
