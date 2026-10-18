@@ -1,11 +1,27 @@
 package class8;
 
 import common.*;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import javafx.animation.*;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
+import java.awt.GraphicsEnvironment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -103,15 +119,10 @@ public class Factorisation extends Topic {
             return;
         }
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception ignored) { }
-
+        Platform.runLater(() -> {
             try {
                 FactorBreakerGame game = new FactorBreakerGame(callback);
-                game.setVisible(true);
-                game.toFront();
+                game.show();
             } catch (Throwable t) {
                 t.printStackTrace();
                 callback.run(); // never leave the caller waiting
@@ -175,171 +186,281 @@ public class Factorisation extends Topic {
     }
 
     // ==============================================================================
-    // INNER CLASS: THE GAME
+    // INNER CLASS: THE GAME (JavaFX)
     // ==============================================================================
-    public static class FactorBreakerGame extends JFrame {
+    public static class FactorBreakerGame {
 
+        // ---------- Game state ----------
+        private static final int MAX_LEVELS = 10;
         private int currentLevel = 1;
         private int score = 0;
-        private final int MAX_LEVELS = 10;
         private int expectedP, expectedQ, expectedA;
         private int levelType;
-        private final Random random = new Random();
-
-        // JavaFX / Core hooks
-        private final Runnable onFinished;
+        private boolean inputLocked = false;
         private boolean finishedNotified = false;
+        private final Random random = new Random();
+        private final Runnable onFinished;
 
-        private JLabel lblStatus, lblEquation, lblInstructions;
-        private JTextField txtGcf, txtFactor1, txtFactor2;
-        private JTextArea txtConsole;
-        private JPanel inputPanel, gcfPanel;
-        private JButton btnHack;
+        // ---------- Style ----------
+        private static final Color BG = Color.rgb(10, 20, 10);
+        private static final Color FG = Color.rgb(0, 255, 65);
+        private static final Color ERR = Color.rgb(255, 50, 50);
+        private static final String FG_HEX = "#00ff41";
+        private static final String ERR_HEX = "#ff3232";
+        private static final Font TERMINAL = Font.font("Monospaced", FontWeight.BOLD, 16);
+        private static final Font TITLE = Font.font("Monospaced", FontWeight.BOLD, 40);
 
-        private final Color BG_COLOR = new Color(10, 20, 10);
-        private final Color FG_COLOR = new Color(0, 255, 65);
-        private final Color ERROR_COLOR = new Color(255, 50, 50);
-        private final Font TERMINAL_FONT = new Font("Monospaced", Font.BOLD, 16);
-        private final Font TITLE_FONT = new Font("Monospaced", Font.BOLD, 36);
+        // ---------- UI ----------
+        private Stage stage;
+        private Label lblStatus, lblEquation, lblInstructions, lblFloat;
+        private TextField txtGcf, txtP, txtQ;
+        private HBox gcfBox, inputPanel;
+        private Button btnHack, btnFinish;
+        private VBox consoleBox;
+        private ScrollPane consoleScroll;
+        private final Rectangle[] segments = new Rectangle[MAX_LEVELS];
+        private AnimationTimer rainTimer;
 
         public FactorBreakerGame(Runnable onFinished) {
             this.onFinished = onFinished;
-
-            setTitle("Factor Breaker: Cyber-Heist");
-            setSize(800, 600);
-            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-            // Critical listener to resume the main application when window is closed
-            addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    notifyFinished();
-                }
-            });
-
-            setLayout(new BorderLayout());
-            getContentPane().setBackground(BG_COLOR);
-            setLocationRelativeTo(null);
-
-            JPanel topPanel = new JPanel(new BorderLayout());
-            topPanel.setBackground(BG_COLOR);
-            topPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-            lblStatus = new JLabel("LEVEL: 1   |   SCORE: 0");
-            lblStatus.setFont(TERMINAL_FONT);
-            lblStatus.setForeground(FG_COLOR);
-
-            JLabel lblTitle = new JLabel("SYSTEM MAINFRAME FIREWALL", SwingConstants.CENTER);
-            lblTitle.setFont(new Font("Monospaced", Font.BOLD, 24));
-            lblTitle.setForeground(FG_COLOR);
-
-            topPanel.add(lblStatus, BorderLayout.WEST);
-            topPanel.add(lblTitle, BorderLayout.CENTER);
-            add(topPanel, BorderLayout.NORTH);
-
-            JPanel centerPanel = new JPanel(new GridLayout(2, 1));
-            centerPanel.setBackground(BG_COLOR);
-
-            lblEquation = new JLabel("", SwingConstants.CENTER);
-            lblEquation.setFont(TITLE_FONT);
-            lblEquation.setForeground(Color.WHITE);
-
-            lblInstructions = new JLabel("", SwingConstants.CENTER);
-            lblInstructions.setFont(TERMINAL_FONT);
-            lblInstructions.setForeground(Color.LIGHT_GRAY);
-
-            centerPanel.add(lblEquation);
-            centerPanel.add(lblInstructions);
-            add(centerPanel, BorderLayout.CENTER);
-
-            JPanel bottomPanel = new JPanel(new BorderLayout());
-            bottomPanel.setBackground(BG_COLOR);
-            bottomPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
-
-            inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
-            inputPanel.setBackground(BG_COLOR);
-
-            gcfPanel = new JPanel();
-            gcfPanel.setBackground(BG_COLOR);
-            JLabel lblGcf = new JLabel("GCF:");
-            lblGcf.setForeground(FG_COLOR);
-            lblGcf.setFont(TERMINAL_FONT);
-            txtGcf = createTextField();
-            gcfPanel.add(lblGcf);
-            gcfPanel.add(txtGcf);
-            gcfPanel.add(createGreenLabel(" * "));
-
-            inputPanel.add(gcfPanel);
-            inputPanel.add(createGreenLabel("( x + "));
-            txtFactor1 = createTextField();
-            inputPanel.add(txtFactor1);
-            inputPanel.add(createGreenLabel(" ) ( x + "));
-            txtFactor2 = createTextField();
-            inputPanel.add(txtFactor2);
-            inputPanel.add(createGreenLabel(" )"));
-
-            btnHack = new JButton("INITIATE HACK");
-            btnHack.setFont(TERMINAL_FONT);
-            btnHack.setBackground(Color.DARK_GRAY);
-            btnHack.setForeground(FG_COLOR);
-            btnHack.setFocusPainted(false);
-            btnHack.addActionListener(new HackAction());
-            inputPanel.add(btnHack);
-
-            bottomPanel.add(inputPanel, BorderLayout.NORTH);
-
-            txtConsole = new JTextArea(8, 50);
-            txtConsole.setBackground(new Color(5, 10, 5));
-            txtConsole.setForeground(FG_COLOR);
-            txtConsole.setFont(TERMINAL_FONT);
-            txtConsole.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(txtConsole);
-            scrollPane.setBorder(BorderFactory.createLineBorder(FG_COLOR));
-            bottomPanel.add(scrollPane, BorderLayout.SOUTH);
-
-            add(bottomPanel, BorderLayout.SOUTH);
-
-            printToConsole("Initializing Factor Breaker v2.0...");
-            printToConsole("Agent, crack the polynomial passwords to bypass the firewalls.");
-            printToConsole("Use negative numbers if needed (e.g., -4).\n");
+            buildUi();
+            printToConsole("Initializing Factor Breaker v2.0...", FG_HEX);
+            printToConsole("Agent, crack the polynomial passwords to bypass the firewalls.", FG_HEX);
+            printToConsole("Use negative numbers if needed (e.g., -4).", FG_HEX);
             generateLevel();
         }
 
-        private void notifyFinished() {
-            if (finishedNotified) return;
-            finishedNotified = true;
-            if (onFinished != null) {
-                try {
-                    onFinished.run();
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
+        public void show() {
+            stage.show();
+            stage.toFront();
         }
 
-        private JTextField createTextField() {
-            JTextField tf = new JTextField(3);
-            tf.setFont(TERMINAL_FONT);
-            tf.setBackground(Color.BLACK);
-            tf.setForeground(Color.WHITE);
-            tf.setCaretColor(FG_COLOR);
-            tf.setHorizontalAlignment(JTextField.CENTER);
-            tf.addActionListener(e -> btnHack.doClick());
+        // =====================================================================
+        // UI CONSTRUCTION
+        // =====================================================================
+        private void buildUi() {
+            stage = new Stage();
+            stage.setTitle("Factor Breaker: Cyber-Heist");
+
+            // --- Matrix rain background ---
+            Canvas rain = new Canvas(860, 660);
+            StackPane root = new StackPane();
+            root.setStyle("-fx-background-color: rgb(10,20,10);");
+            rain.widthProperty().bind(root.widthProperty());
+            rain.heightProperty().bind(root.heightProperty());
+            startRain(rain);
+
+            // --- Top: status, title, progress ---
+            lblStatus = styledLabel("LEVEL: 1   |   SCORE: 0", TERMINAL, FG);
+            Label lblTitle = styledLabel("SYSTEM MAINFRAME FIREWALL",
+                    Font.font("Monospaced", FontWeight.BOLD, 24), FG);
+            lblTitle.setEffect(new DropShadow(12, FG));
+
+            BorderPane topRow = new BorderPane();
+            topRow.setLeft(lblStatus);
+            topRow.setCenter(lblTitle);
+
+            HBox progress = new HBox(6);
+            progress.setAlignment(Pos.CENTER);
+            for (int i = 0; i < MAX_LEVELS; i++) {
+                Rectangle r = new Rectangle(52, 10);
+                r.setArcWidth(4);
+                r.setArcHeight(4);
+                r.setFill(Color.rgb(25, 45, 25));
+                r.setStroke(FG);
+                r.setStrokeWidth(0.8);
+                segments[i] = r;
+                progress.getChildren().add(r);
+            }
+
+            VBox top = new VBox(14, topRow, progress);
+            top.setPadding(new Insets(20));
+
+            // --- Center: equation + instructions + floating score ---
+            lblEquation = styledLabel("", TITLE, Color.WHITE);
+            lblEquation.setEffect(new DropShadow(10, Color.rgb(0, 255, 65, 0.6)));
+            lblInstructions = styledLabel("", TERMINAL, Color.LIGHTGRAY);
+            lblInstructions.setWrapText(true);
+            lblInstructions.setAlignment(Pos.CENTER);
+
+            VBox centerBox = new VBox(24, lblEquation, lblInstructions);
+            centerBox.setAlignment(Pos.CENTER);
+
+            lblFloat = styledLabel("+100", Font.font("Monospaced", FontWeight.BOLD, 34), FG);
+            lblFloat.setEffect(new DropShadow(14, FG));
+            lblFloat.setOpacity(0);
+            lblFloat.setMouseTransparent(true);
+
+            StackPane center = new StackPane(centerBox, lblFloat);
+
+            // --- Bottom: inputs + console ---
+            txtGcf = createTextField();
+            gcfBox = new HBox(6, styledLabel("GCF:", TERMINAL, FG), txtGcf,
+                    styledLabel(" * ", TITLE, FG));
+            gcfBox.setAlignment(Pos.CENTER);
+
+            txtP = createTextField();
+            txtQ = createTextField();
+
+            btnHack = new Button("INITIATE HACK");
+            styleButton(btnHack);
+            btnHack.setOnAction(e -> onHack());
+
+            inputPanel = new HBox(10, gcfBox,
+                    styledLabel("( x + ", TITLE, FG), txtP,
+                    styledLabel(" ) ( x + ", TITLE, FG), txtQ,
+                    styledLabel(" )", TITLE, FG), btnHack);
+            inputPanel.setAlignment(Pos.CENTER);
+
+            btnFinish = new Button("RETURN TO LESSON");
+            styleButton(btnFinish);
+            btnFinish.setVisible(false);
+            btnFinish.setManaged(false);
+            btnFinish.setOnAction(e -> stage.close());
+
+            consoleBox = new VBox(2);
+            consoleBox.setPadding(new Insets(6));
+            consoleBox.setStyle("-fx-background-color: rgb(5,10,5);");
+            consoleScroll = new ScrollPane(consoleBox);
+            consoleScroll.setFitToWidth(true);
+            consoleScroll.setPrefHeight(170);
+            consoleScroll.setStyle("-fx-background: rgb(5,10,5); -fx-background-color: rgb(5,10,5);"
+                    + "-fx-border-color: " + FG_HEX + ";");
+            consoleBox.heightProperty().addListener((o, a, b) -> consoleScroll.setVvalue(1.0));
+
+            VBox bottom = new VBox(14, inputPanel, btnFinish, consoleScroll);
+            bottom.setAlignment(Pos.CENTER);
+            bottom.setPadding(new Insets(10, 20, 20, 20));
+
+            BorderPane ui = new BorderPane();
+            ui.setTop(top);
+            ui.setCenter(center);
+            ui.setBottom(bottom);
+
+            root.getChildren().addAll(rain, ui);
+
+            Scene scene = new Scene(root, 860, 660);
+            stage.setScene(scene);
+            stage.setMinWidth(760);
+            stage.setMinHeight(600);
+            stage.centerOnScreen();
+
+            // Intro fade-in
+            root.setOpacity(0);
+            FadeTransition fade = new FadeTransition(Duration.millis(700), root);
+            fade.setToValue(1);
+            stage.setOnShown(e -> fade.play());
+
+            // Resume the main app when the window closes
+            stage.setOnHidden(e -> {
+                if (rainTimer != null) rainTimer.stop();
+                notifyFinished();
+            });
+        }
+
+        private Label styledLabel(String text, Font font, Color color) {
+            Label l = new Label(text);
+            l.setFont(font);
+            l.setTextFill(color);
+            return l;
+        }
+
+        private TextField createTextField() {
+            TextField tf = new TextField();
+            tf.setPrefWidth(64);
+            tf.setAlignment(Pos.CENTER);
+            tf.setFont(TERMINAL);
+            tf.setStyle(fieldStyle(FG_HEX));
+            tf.setOnAction(e -> btnHack.fire());
+            tf.focusedProperty().addListener((o, was, is) ->
+                    tf.setStyle(fieldStyle(is ? "#ffffff" : FG_HEX)));
             return tf;
         }
 
-        private JLabel createGreenLabel(String text) {
-            JLabel lbl = new JLabel(text);
-            lbl.setForeground(FG_COLOR);
-            lbl.setFont(TITLE_FONT);
-            return lbl;
+        private String fieldStyle(String border) {
+            return "-fx-background-color: black; -fx-text-fill: white; -fx-highlight-fill: #006622;"
+                    + "-fx-border-color: " + border + "; -fx-border-width: 1.5;";
         }
 
-        private void printToConsole(String text) {
-            txtConsole.append("> " + text + "\n");
-            txtConsole.setCaretPosition(txtConsole.getDocument().getLength());
+        private void styleButton(Button b) {
+            b.setFont(TERMINAL);
+            b.setTextFill(FG);
+            b.setStyle("-fx-background-color: #333333; -fx-border-color: " + FG_HEX + "; -fx-cursor: hand;");
+            b.setFocusTraversable(false);
+            b.setOnMouseEntered(e -> scaleTo(b, 1.08));
+            b.setOnMouseExited(e -> scaleTo(b, 1.0));
         }
 
+        private void scaleTo(javafx.scene.Node n, double target) {
+            ScaleTransition st = new ScaleTransition(Duration.millis(120), n);
+            st.setToX(target);
+            st.setToY(target);
+            st.play();
+        }
+
+        // =====================================================================
+        // MATRIX RAIN BACKGROUND
+        // =====================================================================
+        private void startRain(Canvas canvas) {
+            final String glyphs = "01ABCDEFXYZ+-=<>[]{}#$%";
+            final int size = 16;
+            final int[][] drops = {new int[0]};
+
+            rainTimer = new AnimationTimer() {
+                private long last = 0;
+
+                @Override
+                public void handle(long now) {
+                    if (now - last < 70_000_000L) return; // ~14 fps
+                    last = now;
+
+                    double w = canvas.getWidth(), h = canvas.getHeight();
+                    if (w <= 0 || h <= 0) return;
+                    int cols = (int) (w / size) + 1;
+                    if (drops[0].length != cols) {
+                        drops[0] = new int[cols];
+                        for (int i = 0; i < cols; i++) drops[0][i] = random.nextInt((int) (h / size) + 1);
+                    }
+
+                    GraphicsContext g = canvas.getGraphicsContext2D();
+                    g.setFill(Color.rgb(10, 20, 10, 0.18));
+                    g.fillRect(0, 0, w, h);
+                    g.setFill(Color.rgb(0, 255, 65, 0.35));
+                    g.setFont(Font.font("Monospaced", size));
+                    for (int i = 0; i < cols; i++) {
+                        char c = glyphs.charAt(random.nextInt(glyphs.length()));
+                        g.fillText(String.valueOf(c), i * size, drops[0][i] * size);
+                        if (drops[0][i] * size > h && random.nextDouble() > 0.96) drops[0][i] = 0;
+                        drops[0][i]++;
+                    }
+                }
+            };
+            rainTimer.start();
+        }
+
+        // =====================================================================
+        // CONSOLE (typewriter effect)
+        // =====================================================================
+        private void printToConsole(String text, String colorHex) {
+            Label line = new Label("> ");
+            line.setFont(TERMINAL);
+            line.setWrapText(true);
+            line.setStyle("-fx-text-fill: " + colorHex + ";");
+            consoleBox.getChildren().add(line);
+            if (consoleBox.getChildren().size() > 60) consoleBox.getChildren().remove(0);
+
+            final int[] idx = {0};
+            Timeline typing = new Timeline(new KeyFrame(Duration.millis(10), e -> {
+                idx[0]++;
+                line.setText("> " + text.substring(0, idx[0]));
+            }));
+            typing.setCycleCount(text.length());
+            typing.play();
+        }
+
+        // =====================================================================
+        // LEVEL GENERATION
+        // =====================================================================
         private void generateLevel() {
             lblStatus.setText("LEVEL: " + currentLevel + " / " + MAX_LEVELS + "   |   SCORE: " + score);
 
@@ -348,6 +469,8 @@ public class Factorisation extends Topic {
             else levelType = 3;
 
             expectedA = 1;
+            boolean showGcf = false;
+            String hint = "";
 
             switch (levelType) {
                 case 1:
@@ -355,35 +478,38 @@ public class Factorisation extends Topic {
                     expectedQ = random.nextInt(9) - 4;
                     if (expectedP == 0) expectedP = 2;
                     if (expectedQ == 0) expectedQ = 3;
-                    gcfPanel.setVisible(false);
-                    lblInstructions.setText("Hint: What multiplies to C and adds to B?");
+                    hint = "Hint: What multiplies to C and adds to B?";
                     break;
                 case 2:
                     expectedP = random.nextInt(6) + 3;
                     expectedQ = -expectedP;
-                    gcfPanel.setVisible(false);
-                    lblInstructions.setText("Hint: Difference of Squares! The middle term is 0x.");
+                    hint = "Hint: Difference of Squares! The middle term is 0x.";
                     break;
-                case 3:
+                default:
                     expectedP = random.nextInt(7) - 3;
                     expectedQ = random.nextInt(7) - 3;
                     if (expectedP == 0) expectedP = 1;
                     if (expectedQ == 0) expectedQ = -2;
                     expectedA = random.nextInt(3) + 2;
-                    gcfPanel.setVisible(true);
-                    lblInstructions.setText("Hint: Factor out the Greatest Common Factor (GCF) FIRST!");
+                    showGcf = true;
+                    hint = "Hint: Factor out the Greatest Common Factor (GCF) FIRST!";
                     break;
             }
 
             int b = expectedA * (expectedP + expectedQ);
             int c = expectedA * (expectedP * expectedQ);
 
-            lblEquation.setText(formatQuadratic(expectedA, b, c));
+            gcfBox.setVisible(showGcf);
+            gcfBox.setManaged(showGcf);
+            lblInstructions.setText(hint);
 
-            txtGcf.setText("");
-            txtFactor1.setText("");
-            txtFactor2.setText("");
-            txtFactor1.requestFocus();
+            txtGcf.clear();
+            txtP.clear();
+            txtQ.clear();
+
+            playEquationIntro(formatQuadratic(expectedA, b, c));
+            (showGcf ? txtGcf : txtP).requestFocus();
+            inputLocked = false;
         }
 
         private String formatQuadratic(int a, int b, int c) {
@@ -398,52 +524,208 @@ public class Factorisation extends Topic {
             if (c > 0) eq.append("+ ").append(c);
             else if (c < 0) eq.append("- ").append(Math.abs(c));
 
-            return eq.toString();
+            return eq.toString().trim();
         }
 
-        private class HackAction implements ActionListener {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        /** Scramble/"decrypt" effect plus a pop-in scale. */
+        private void playEquationIntro(String target) {
+            final String noise = "01#$%&@!?<>[]{}";
+            final int frames = 18;
+
+            Timeline decrypt = new Timeline();
+            for (int f = 0; f <= frames; f++) {
+                final int frame = f;
+                decrypt.getKeyFrames().add(new KeyFrame(Duration.millis(f * 35), e -> {
+                    int reveal = target.length() * frame / frames;
+                    StringBuilder sb = new StringBuilder();
+                    for (int j = 0; j < target.length(); j++) {
+                        char ch = target.charAt(j);
+                        if (j < reveal || ch == ' ') sb.append(ch);
+                        else sb.append(noise.charAt(random.nextInt(noise.length())));
+                    }
+                    lblEquation.setText(sb.toString());
+                }));
+            }
+            decrypt.setOnFinished(e -> lblEquation.setText(target));
+
+            lblEquation.setTextFill(Color.WHITE);
+            lblEquation.setScaleX(0.6);
+            lblEquation.setScaleY(0.6);
+            lblEquation.setOpacity(0);
+
+            FadeTransition fade = new FadeTransition(Duration.millis(350), lblEquation);
+            fade.setToValue(1);
+            ScaleTransition pop = new ScaleTransition(Duration.millis(450), lblEquation);
+            pop.setToX(1);
+            pop.setToY(1);
+            pop.setInterpolator(Interpolator.EASE_OUT);
+
+            new ParallelTransition(decrypt, fade, pop).play();
+        }
+
+        // =====================================================================
+        // GAME LOGIC
+        // =====================================================================
+        private void onHack() {
+            if (inputLocked) return;
+
+            int userP, userQ, userA = 1;
+            try {
+                userP = Integer.parseInt(txtP.getText().trim());
+                userQ = Integer.parseInt(txtQ.getText().trim());
+                if (levelType == 3) userA = Integer.parseInt(txtGcf.getText().trim());
+            } catch (NumberFormatException ex) {
+                printToConsole("[SYNTAX ERROR] Please enter numbers only! Use '-' for negative numbers.", ERR_HEX);
+                shake();
+                return;
+            }
+
+            if (levelType == 3 && userA != expectedA) {
+                printToConsole("[ERROR] Incorrect GCF. Look at the numbers in the equation again.", ERR_HEX);
+                shake();
+                return;
+            }
+
+            boolean correct = (userP == expectedP && userQ == expectedQ)
+                    || (userP == expectedQ && userQ == expectedP);
+
+            if (correct) {
+                onCorrect();
+            } else {
+                printToConsole("[ACCESS DENIED] Incorrect factors. Remember: Multiply to get the last number, add to get the middle.", ERR_HEX);
+                shake();
+            }
+        }
+
+        private void onCorrect() {
+            inputLocked = true;
+            printToConsole("[SUCCESS] Firewall level " + currentLevel + " breached! +100 points.", FG_HEX);
+            score += 100;
+            lblStatus.setText("LEVEL: " + currentLevel + " / " + MAX_LEVELS + "   |   SCORE: " + score);
+
+            lightSegment(currentLevel - 1);
+            floatScore();
+            flashEquation(FG);
+
+            currentLevel++;
+            PauseTransition wait = new PauseTransition(Duration.millis(900));
+            wait.setOnFinished(e -> {
+                if (currentLevel > MAX_LEVELS) showVictory();
+                else generateLevel();
+            });
+            wait.play();
+        }
+
+        // =====================================================================
+        // ANIMATIONS
+        // =====================================================================
+        /** Horizontal shake of the input row + red flash on the equation. */
+        private void shake() {
+            TranslateTransition t = new TranslateTransition(Duration.millis(55), inputPanel);
+            t.setByX(12);
+            t.setCycleCount(6);
+            t.setAutoReverse(true);
+            t.setOnFinished(e -> inputPanel.setTranslateX(0));
+            t.play();
+            flashEquation(ERR);
+        }
+
+        /** Briefly tints the equation and pulses its glow. */
+        private void flashEquation(Color c) {
+            DropShadow glow = new DropShadow(10, Color.rgb(0, 255, 65, 0.6));
+            lblEquation.setEffect(glow);
+            Timeline tl = new Timeline(
+                    new KeyFrame(Duration.ZERO,
+                            new KeyValue(glow.radiusProperty(), 10),
+                            new KeyValue(glow.colorProperty(), c)),
+                    new KeyFrame(Duration.millis(150),
+                            new KeyValue(glow.radiusProperty(), 40),
+                            new KeyValue(glow.colorProperty(), c)),
+                    new KeyFrame(Duration.millis(600),
+                            new KeyValue(glow.radiusProperty(), 10),
+                            new KeyValue(glow.colorProperty(), Color.rgb(0, 255, 65, 0.6))));
+            lblEquation.setTextFill(c == ERR ? ERR : Color.WHITE);
+            tl.setOnFinished(e -> lblEquation.setTextFill(Color.WHITE));
+            tl.play();
+        }
+
+        /** Fills a progress segment with a green fade and a little bounce. */
+        private void lightSegment(int index) {
+            if (index < 0 || index >= MAX_LEVELS) return;
+            Rectangle r = segments[index];
+            FillTransition fill = new FillTransition(Duration.millis(400), r,
+                    Color.rgb(25, 45, 25), FG);
+            ScaleTransition bounce = new ScaleTransition(Duration.millis(200), r);
+            bounce.setToX(1.25);
+            bounce.setToY(2.0);
+            bounce.setAutoReverse(true);
+            bounce.setCycleCount(2);
+            r.setEffect(new DropShadow(10, FG));
+            new ParallelTransition(fill, bounce).play();
+        }
+
+        /** "+100" rises and fades. */
+        private void floatScore() {
+            lblFloat.setTranslateY(40);
+            lblFloat.setOpacity(1);
+            TranslateTransition rise = new TranslateTransition(Duration.millis(900), lblFloat);
+            rise.setToY(-70);
+            FadeTransition fade = new FadeTransition(Duration.millis(900), lblFloat);
+            fade.setFromValue(1);
+            fade.setToValue(0);
+            new ParallelTransition(rise, fade).play();
+        }
+
+        private void showVictory() {
+            lblStatus.setText("MISSION COMPLETE   |   FINAL SCORE: " + score);
+            lblInstructions.setText("Mainframe secured. Close this window to return to your lesson!");
+            inputPanel.setVisible(false);
+            inputPanel.setManaged(false);
+            btnFinish.setVisible(true);
+            btnFinish.setManaged(true);
+            printToConsole("*** MISSION COMPLETE. YOU CAN CLOSE THIS WINDOW NOW. ***", FG_HEX);
+
+            lblEquation.setText("ACCESS GRANTED");
+            lblEquation.setTextFill(FG);
+            lblEquation.setScaleX(0.2);
+            lblEquation.setScaleY(0.2);
+            lblEquation.setOpacity(0);
+
+            FadeTransition fade = new FadeTransition(Duration.millis(500), lblEquation);
+            fade.setToValue(1);
+            ScaleTransition pop = new ScaleTransition(Duration.millis(700), lblEquation);
+            pop.setToX(1);
+            pop.setToY(1);
+            pop.setInterpolator(Interpolator.EASE_OUT);
+            new ParallelTransition(fade, pop).play();
+
+            // Endless gentle pulse on the glow
+            DropShadow glow = new DropShadow(10, FG);
+            lblEquation.setEffect(glow);
+            Timeline pulse = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(glow.radiusProperty(), 10)),
+                    new KeyFrame(Duration.millis(800), new KeyValue(glow.radiusProperty(), 45)));
+            pulse.setAutoReverse(true);
+            pulse.setCycleCount(Animation.INDEFINITE);
+            pulse.play();
+            stage.setOnHidden(e -> {
+                pulse.stop();
+                if (rainTimer != null) rainTimer.stop();
+                notifyFinished();
+            });
+        }
+
+        // =====================================================================
+        // FINISH CALLBACK
+        // =====================================================================
+        private void notifyFinished() {
+            if (finishedNotified) return;
+            finishedNotified = true;
+            if (onFinished != null) {
                 try {
-                    int userP = Integer.parseInt(txtFactor1.getText().trim());
-                    int userQ = Integer.parseInt(txtFactor2.getText().trim());
-                    int userA = 1;
-
-                    if (levelType == 3) userA = Integer.parseInt(txtGcf.getText().trim());
-
-                    if (levelType == 3 && userA != expectedA) {
-                        printToConsole("[ERROR] Incorrect GCF. Look at the numbers in the equation again.");
-                        txtConsole.setForeground(ERROR_COLOR);
-                        return;
-                    }
-
-                    boolean factorsCorrect = (userP == expectedP && userQ == expectedQ) ||
-                            (userP == expectedQ && userQ == expectedP);
-
-                    if (factorsCorrect) {
-                        txtConsole.setForeground(FG_COLOR);
-                        printToConsole("[SUCCESS] Firewall level " + currentLevel + " breached! +100 points.");
-                        score += 100;
-                        currentLevel++;
-
-                        if (currentLevel > MAX_LEVELS) {
-                            lblEquation.setText("ACCESS GRANTED");
-                            lblEquation.setForeground(FG_COLOR);
-                            lblInstructions.setText("Mainframe secured. Close this window to return to your lesson!");
-                            btnHack.setEnabled(false);
-                            inputPanel.setVisible(false);
-                            lblStatus.setText("MISSION COMPLETE   |   FINAL SCORE: " + score);
-                            printToConsole("\n*** MISSION COMPLETE. YOU CAN CLOSE THIS WINDOW NOW. ***");
-                        } else {
-                            generateLevel();
-                        }
-                    } else {
-                        txtConsole.setForeground(ERROR_COLOR);
-                        printToConsole("[ACCESS DENIED] Incorrect factors. Remember: Multiply to get the last number, add to get the middle.");
-                    }
-                } catch (NumberFormatException ex) {
-                    txtConsole.setForeground(ERROR_COLOR);
-                    printToConsole("[SYNTAX ERROR] Please enter numbers only! Use '-' for negative numbers.");
+                    onFinished.run();
+                } catch (Throwable t) {
+                    t.printStackTrace();
                 }
             }
         }

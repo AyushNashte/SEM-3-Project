@@ -1,11 +1,7 @@
 package class8;
 
 import common.*;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.GraphicsEnvironment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +54,6 @@ public class LinearEquations extends Topic {
         System.out.println("=== STEP 2: LESSON CONTENT ===");
         getLessonContentBank().forEach(LessonContent::display);
 
-        // Never block the JavaFX thread
         if (isJavaFxThread() || GraphicsEnvironment.isHeadless()) {
             return;
         }
@@ -87,7 +82,7 @@ public class LinearEquations extends Topic {
     }
 
     // ==============================================================================
-    // 3. JAVAFX UI GAME HOOKS (used by the LessonScreen "Play Game" button)
+    // 3. JAVAFX UI GAME HOOKS
     // ==============================================================================
     @Override
     public Optional<String> getGameId() {
@@ -103,18 +98,13 @@ public class LinearEquations extends Topic {
             return;
         }
 
-        SwingUtilities.invokeLater(() -> {
+        javafx.application.Platform.runLater(() -> {
             try {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception ignored) { }
-
-            try {
-                EquationDuelGame game = new EquationDuelGame(callback);
-                game.setVisible(true);
-                game.toFront();
+                EquationDuelFX game = new EquationDuelFX(callback);
+                game.show();
             } catch (Throwable t) {
                 t.printStackTrace();
-                callback.run(); // never leave the caller waiting
+                callback.run();
             }
         });
     }
@@ -158,11 +148,11 @@ public class LinearEquations extends Topic {
     @Override
     protected List<LessonContent> getLessonContentBank() {
         return Arrays.asList(
-                new LessonContent(WHAT_IS_LINEAR, "A linear equation in one variable is an equation where the variable has power 1 and appears only once as a letter (no x², no 1/x, no second variable). The solution, or root, is the value of the variable that makes both sides equal.", "ax + b = c, where a ≠ 0", Arrays.asList("2x + 5 = 11 is linear. Putting x = 3 gives 2(3) + 5 = 11, so x = 3 is the solution", "x² + 3 = 7 is not linear because the power of x is 2")),
-                new LessonContent(SOLVE_BASIC, "To solve an equation, undo what has been done to x using inverse operations, and do the same thing to both sides so the equation stays balanced. Undo addition or subtraction first, then multiplication or division.", "Whatever you do to one side, do to the other", Arrays.asList("x + 7 = 12 -> x = 12 - 7 = 5", "2x + 3 = 11 -> 2x = 8 -> x = 4")),
-                new LessonContent(BOTH_SIDES, "When x appears on both sides, move all the x terms to one side and all the numbers to the other. Moving a term across the equals sign (transposition) changes its sign.", "Transposition: + becomes -, and - becomes +", Arrays.asList("5x - 3 = 2x + 9 -> 5x - 2x = 9 + 3 -> 3x = 12 -> x = 4", "6x + 2 = 2x + 22 -> 4x = 20 -> x = 5")),
-                new LessonContent(BRACKETS_FRACTIONS, "Remove brackets first by multiplying them out. For fractions, multiply every term by the LCM of the denominators to clear them, then solve as usual.", "a(b + c) = ab + ac", Arrays.asList("3(x + 2) = 15 -> 3x + 6 = 15 -> 3x = 9 -> x = 3", "x/2 + 1 = 4 -> x/2 = 3 -> x = 6")),
-                new LessonContent(WORD_PROBLEMS, "To solve a word problem, let the unknown be x, translate each sentence into an equation, solve it, and check the answer against the story.", "Let the unknown = x, form the equation, solve, then verify", Arrays.asList("A number increased by 9 gives 25: x + 9 = 25, so x = 16", "The sum of two consecutive numbers is 31: x + (x + 1) = 31 -> 2x = 30 -> x = 15, so the numbers are 15 and 16"))
+                new LessonContent(WHAT_IS_LINEAR, "A linear equation in one variable is an equation where the variable has power 1 and appears only once as a letter. The solution is the value of the variable that makes both sides equal.", "ax + b = c", Arrays.asList("2x + 5 = 11 is linear.", "x² + 3 = 7 is not linear.")),
+                new LessonContent(SOLVE_BASIC, "Undo what has been done to x using inverse operations, and do the same thing to both sides so the equation stays balanced.", "Do the same to both sides", Arrays.asList("x + 7 = 12 -> x = 12 - 7 = 5")),
+                new LessonContent(BOTH_SIDES, "Move all x terms to one side and numbers to the other. Transposition changes its sign.", "+ becomes -, and - becomes +", Arrays.asList("5x - 3 = 2x + 9 -> 3x = 12 -> x = 4")),
+                new LessonContent(BRACKETS_FRACTIONS, "Remove brackets first. For fractions, multiply every term by the LCM to clear them.", "a(b + c) = ab + ac", Arrays.asList("3(x + 2) = 15 -> 3x + 6 = 15 -> 3x = 9 -> x = 3")),
+                new LessonContent(WORD_PROBLEMS, "Let the unknown be x, translate each sentence into an equation, solve it.", "Let unknown = x", Arrays.asList("Number increased by 9 gives 25: x + 9 = 25, so x = 16"))
         );
     }
 
@@ -175,9 +165,9 @@ public class LinearEquations extends Topic {
     }
 
     // ==============================================================================
-    // INNER CLASS: THE GAME
+    // INNER CLASS: JAVAFX GAME IMPLEMENTATION
     // ==============================================================================
-    public static class EquationDuelGame extends JFrame {
+    public static class EquationDuelFX extends javafx.stage.Stage {
 
         private enum GameState {
             PLAYER_TURN, MONSTER_TURN, GAME_OVER
@@ -189,185 +179,373 @@ public class LinearEquations extends Topic {
         private GameState currentState;
         private final Random random = new Random();
 
-        private Timer defenseTimer;
-        private int timeLeft = 15;
+        // Control Animations
+        private javafx.animation.Timeline defenseTimer;
+        private javafx.animation.TranslateTransition wizHover;
+        private javafx.animation.TranslateTransition dragHover;
+        private javafx.animation.ScaleTransition orbPulse;
+        private javafx.animation.ScaleTransition wingFlap;
 
-        // JavaFX / Core hooks
+        private int timeLeft = 15;
+        private boolean inputLocked = false;
+
         private final Runnable onFinished;
         private boolean finishedNotified = false;
 
-        private JProgressBar playerHealthBar, monsterHealthBar;
-        private JTextArea battleLog;
-        private JLabel lblEquation, lblPhase, lblTimer, lblHero, lblMonster;
-        private JTextField txtInput;
-        private JButton btnAction;
-        private JPanel inputPanel;
+        // UI Components
+        private javafx.scene.control.ProgressBar playerHealthBar;
+        private javafx.scene.control.ProgressBar monsterHealthBar;
+        private javafx.scene.control.TextArea battleLog;
+        private javafx.scene.control.Label lblEquation;
+        private javafx.scene.control.Label lblPhase;
+        private javafx.scene.control.Label lblTimer;
+        private javafx.scene.control.TextField txtInput;
+        private javafx.scene.control.Button btnAction;
 
-        private final Color BG_COLOR = new Color(20, 20, 25);
-        private final Color LOG_BG = new Color(10, 10, 15);
-        private final Color TEXT_COLOR = new Color(220, 220, 220);
-        private final Color ACCENT_COLOR = new Color(255, 165, 0);
-        private final Font MAIN_FONT = new Font("SansSerif", Font.BOLD, 18);
-        private final Font EQ_FONT = new Font("Monospaced", Font.BOLD, 32);
+        // Arena Animation Nodes
+        private javafx.scene.layout.Pane arena;
+        private javafx.scene.Group wizardNode;
+        private javafx.scene.Group dragonNode;
+        private javafx.scene.shape.Circle fireball;
+        private javafx.scene.shape.Polygon dragonBreath;
+        private javafx.scene.shape.Circle magicShield;
 
-        public EquationDuelGame(Runnable onFinished) {
+        private final String BG_HEX = "#111116";
+        private final String PANEL_HEX = "#1e1e24";
+
+        public EquationDuelFX(Runnable onFinished) {
             this.onFinished = onFinished;
-
             setTitle("Equation Duel: Wizard vs. Dragon");
-            setSize(800, 650);
-            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            setResizable(false);
+            setOnHidden(e -> notifyFinished());
 
-            // Critical listener to resume the main application when window is closed
-            addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    notifyFinished();
-                }
-            });
+            javafx.scene.layout.BorderPane root = new javafx.scene.layout.BorderPane();
+            root.setStyle("-fx-background-color: " + BG_HEX + ";");
 
-            setLayout(new BorderLayout());
-            getContentPane().setBackground(BG_COLOR);
-            setLocationRelativeTo(null);
+            // --- TOP PANEL (Health Bars) ---
+            javafx.scene.layout.HBox topBox = new javafx.scene.layout.HBox(40);
+            topBox.setAlignment(javafx.geometry.Pos.CENTER);
+            topBox.setPadding(new javafx.geometry.Insets(20));
+            topBox.setStyle("-fx-background-color: " + PANEL_HEX + "; -fx-border-color: #333; -fx-border-width: 0 0 2 0;");
 
-            JPanel topPanel = new JPanel(new GridLayout(1, 2, 20, 0));
-            topPanel.setBackground(BG_COLOR);
-            topPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+            javafx.scene.layout.VBox pBox = createHealthBox("WIZARD (You)", "#00ffff", true);
+            playerHealthBar = (javafx.scene.control.ProgressBar) pBox.getChildren().get(1);
 
-            JPanel playerPanel = new JPanel(new BorderLayout(0, 10));
-            playerPanel.setBackground(BG_COLOR);
-            lblHero = new JLabel("🧙‍♂️ WIZARD (You)", SwingConstants.LEFT);
-            lblHero.setFont(MAIN_FONT);
-            lblHero.setForeground(Color.CYAN);
-            playerHealthBar = new JProgressBar(0, 100);
-            playerHealthBar.setValue(playerHP);
-            playerHealthBar.setStringPainted(true);
-            playerHealthBar.setForeground(new Color(50, 205, 50));
-            playerPanel.add(lblHero, BorderLayout.NORTH);
-            playerPanel.add(playerHealthBar, BorderLayout.CENTER);
+            javafx.scene.layout.VBox mBox = createHealthBox("ANCIENT DRAGON", "#ff4444", false);
+            monsterHealthBar = (javafx.scene.control.ProgressBar) mBox.getChildren().get(1);
 
-            JPanel monsterPanel = new JPanel(new BorderLayout(0, 10));
-            monsterPanel.setBackground(BG_COLOR);
-            lblMonster = new JLabel("🐉 ANCIENT DRAGON", SwingConstants.RIGHT);
-            lblMonster.setFont(MAIN_FONT);
-            lblMonster.setForeground(Color.RED);
-            monsterHealthBar = new JProgressBar(0, 100);
-            monsterHealthBar.setValue(monsterHP);
-            monsterHealthBar.setStringPainted(true);
-            monsterHealthBar.setForeground(Color.RED);
-            monsterPanel.add(lblMonster, BorderLayout.NORTH);
-            monsterPanel.add(monsterHealthBar, BorderLayout.CENTER);
+            topBox.getChildren().addAll(pBox, mBox);
+            root.setTop(topBox);
 
-            topPanel.add(playerPanel);
-            topPanel.add(monsterPanel);
-            add(topPanel, BorderLayout.NORTH);
+            // --- CENTER PANEL (Arena & Battle Log) ---
+            javafx.scene.layout.VBox centerContent = new javafx.scene.layout.VBox();
+            setupArena();
 
-            JPanel centerPanel = new JPanel(new BorderLayout());
-            centerPanel.setBackground(BG_COLOR);
-
-            battleLog = new JTextArea();
-            battleLog.setBackground(LOG_BG);
-            battleLog.setForeground(TEXT_COLOR);
-            battleLog.setFont(new Font("Monospaced", Font.PLAIN, 16));
+            battleLog = new javafx.scene.control.TextArea();
             battleLog.setEditable(false);
-            battleLog.setMargin(new Insets(10, 10, 10, 10));
-            JScrollPane scrollLog = new JScrollPane(battleLog);
-            scrollLog.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR, 2));
-            centerPanel.add(scrollLog, BorderLayout.CENTER);
+            battleLog.setWrapText(true);
+            battleLog.setPrefHeight(120);
+            battleLog.setStyle("-fx-control-inner-background: #0a0a0c; -fx-text-fill: #dddddd; -fx-font-family: 'Monospaced'; -fx-font-size: 14px; -fx-border-color: #ffaa00; -fx-border-width: 2;");
 
-            JPanel eqPanel = new JPanel(new GridLayout(3, 1));
-            eqPanel.setBackground(BG_COLOR);
-            eqPanel.setBorder(new EmptyBorder(20, 0, 10, 0));
+            centerContent.getChildren().addAll(arena, battleLog);
+            root.setCenter(centerContent);
 
-            lblPhase = new JLabel("PHASE", SwingConstants.CENTER);
-            lblPhase.setFont(MAIN_FONT);
-            lblPhase.setForeground(ACCENT_COLOR);
+            // --- BOTTOM PANEL (Controls) ---
+            javafx.scene.layout.VBox bottomBox = new javafx.scene.layout.VBox(15);
+            bottomBox.setAlignment(javafx.geometry.Pos.CENTER);
+            bottomBox.setPadding(new javafx.geometry.Insets(20));
+            bottomBox.setStyle("-fx-background-color: " + PANEL_HEX + "; -fx-border-color: #333; -fx-border-width: 2 0 0 0;");
 
-            lblEquation = new JLabel("2x + 5 = 15", SwingConstants.CENTER);
-            lblEquation.setFont(EQ_FONT);
-            lblEquation.setForeground(Color.WHITE);
+            lblPhase = createLabel("PHASE", "#ffaa00", 20, true);
+            lblEquation = createLabel("2x + 5 = 15", "#ffffff", 36, true);
+            lblTimer = createLabel("", "#ff4444", 18, true);
 
-            lblTimer = new JLabel("", SwingConstants.CENTER);
-            lblTimer.setFont(MAIN_FONT);
-            lblTimer.setForeground(Color.RED);
+            javafx.scene.layout.HBox inputBox = new javafx.scene.layout.HBox(15);
+            inputBox.setAlignment(javafx.geometry.Pos.CENTER);
 
-            eqPanel.add(lblPhase);
-            eqPanel.add(lblEquation);
-            eqPanel.add(lblTimer);
-            centerPanel.add(eqPanel, BorderLayout.SOUTH);
+            javafx.scene.control.Label lblX = createLabel("x = ", "#ffffff", 28, true);
+            txtInput = new javafx.scene.control.TextField();
+            txtInput.setPrefWidth(80);
+            txtInput.setStyle("-fx-font-size: 24px; -fx-background-color: #333; -fx-text-fill: white; -fx-alignment: center;");
+            txtInput.setOnAction(e -> processTurn()); // trigger on Enter
 
-            add(centerPanel, BorderLayout.CENTER);
+            btnAction = new javafx.scene.control.Button("CAST SPELL");
+            btnAction.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: #ffaa00; -fx-text-fill: black; -fx-cursor: hand;");
+            btnAction.setOnAction(e -> processTurn());
 
-            inputPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 20));
-            inputPanel.setBackground(BG_COLOR);
+            inputBox.getChildren().addAll(lblX, txtInput, btnAction);
+            bottomBox.getChildren().addAll(lblPhase, lblEquation, lblTimer, inputBox);
+            root.setBottom(bottomBox);
 
-            JLabel lblX = new JLabel("x = ");
-            lblX.setFont(EQ_FONT);
-            lblX.setForeground(Color.WHITE);
+            // Timer Setup
+            defenseTimer = new javafx.animation.Timeline(
+                    new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1), e -> {
+                        timeLeft--;
+                        lblTimer.setText("⏳ Time remaining: " + timeLeft + "s");
+                        if (timeLeft <= 0) {
+                            defenseTimer.stop();
+                            log("⏳ TIME'S UP! You failed to raise your shield!");
+                            txtInput.setText("");
+                            handleMonsterAttack(false);
+                        }
+                    })
+            );
+            defenseTimer.setCycleCount(javafx.animation.Animation.INDEFINITE);
 
-            txtInput = new JTextField(5);
-            txtInput.setFont(EQ_FONT);
-            txtInput.setHorizontalAlignment(JTextField.CENTER);
-            txtInput.setBackground(Color.DARK_GRAY);
-            txtInput.setForeground(Color.WHITE);
-            txtInput.setCaretColor(Color.WHITE);
-            txtInput.addActionListener(e -> processTurn());
-
-            btnAction = new JButton("CAST SPELL");
-            btnAction.setFont(MAIN_FONT);
-            btnAction.setBackground(ACCENT_COLOR);
-            btnAction.setForeground(Color.BLACK);
-            btnAction.setFocusPainted(false);
-            btnAction.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            btnAction.addActionListener(e -> processTurn());
-
-            inputPanel.add(lblX);
-            inputPanel.add(txtInput);
-            inputPanel.add(btnAction);
-            add(inputPanel, BorderLayout.SOUTH);
-
-            defenseTimer = new Timer(1000, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    timeLeft--;
-                    lblTimer.setText("⏳ Time remaining: " + timeLeft + "s");
-                    if (timeLeft <= 0) {
-                        defenseTimer.stop();
-                        log("⏳ TIME'S UP! You failed to raise your shield!");
-                        txtInput.setText("");
-                        resolveDefense(false);
-                    }
-                }
-            });
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 800, 700);
+            setScene(scene);
 
             log("⚔️ A wild ANCIENT DRAGON appears!");
             log("Solve the linear equations to attack and defend.");
+            updateHealthBars();
             startPlayerTurn();
+        }
+
+        private void setupArena() {
+            arena = new javafx.scene.layout.Pane();
+            arena.setPrefSize(800, 250);
+            arena.setStyle("-fx-background-color: " + BG_HEX + ";");
+
+            // 1. HIGH-QUALITY WIZARD
+            wizardNode = createWizard();
+            wizardNode.setLayoutX(150);
+            wizardNode.setLayoutY(140);
+
+            // 2. HIGH-QUALITY DRAGON (Now flipped to face the Wizard)
+            dragonNode = createDragon();
+            dragonNode.setLayoutX(600);
+            dragonNode.setLayoutY(140);
+
+            // Hover Animations
+            wizHover = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(1.5), wizardNode);
+            wizHover.setByY(-10);
+            wizHover.setAutoReverse(true);
+            wizHover.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            wizHover.play();
+
+            dragHover = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(1.2), dragonNode);
+            dragHover.setByY(-15);
+            dragHover.setAutoReverse(true);
+            dragHover.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            dragHover.play();
+
+            // 3. PROJECTILES
+            fireball = new javafx.scene.shape.Circle(18);
+            javafx.scene.paint.RadialGradient fbGrad = new javafx.scene.paint.RadialGradient(
+                    0, 0, 0.5, 0.5, 0.5, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                    new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.WHITE),
+                    new javafx.scene.paint.Stop(0.3, javafx.scene.paint.Color.YELLOW),
+                    new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.RED)
+            );
+            fireball.setFill(fbGrad);
+            fireball.setEffect(new javafx.scene.effect.DropShadow(15, javafx.scene.paint.Color.ORANGE));
+            fireball.setVisible(false);
+
+            // Dragon Breath (Redesigned to face and expand to the LEFT)
+            dragonBreath = new javafx.scene.shape.Polygon(0, 0, -80, -35, -80, 35);
+            javafx.scene.paint.LinearGradient breathGrad = new javafx.scene.paint.LinearGradient(
+                    0, 0, 1, 0, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                    new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.rgb(255, 255, 0, 0)), // Transparent yellow on left
+                    new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.RED)                   // Solid red on right (at mouth)
+            );
+            dragonBreath.setFill(breathGrad);
+            dragonBreath.setVisible(false);
+
+            magicShield = new javafx.scene.shape.Circle(75, javafx.scene.paint.Color.rgb(0, 255, 255, 0.2));
+            magicShield.setStroke(javafx.scene.paint.Color.CYAN);
+            magicShield.setStrokeWidth(5);
+            magicShield.setEffect(new javafx.scene.effect.DropShadow(20, javafx.scene.paint.Color.CYAN));
+            magicShield.setVisible(false);
+
+            arena.getChildren().addAll(wizardNode, dragonNode, fireball, dragonBreath, magicShield);
+        }
+
+        // ==========================================
+        // CUSTOM VECTOR GRAPHICS FOR WIZARD
+        // ==========================================
+        private javafx.scene.Group createWizard() {
+            javafx.scene.Group w = new javafx.scene.Group();
+            javafx.scene.effect.DropShadow glow = new javafx.scene.effect.DropShadow(20, javafx.scene.paint.Color.rgb(100, 100, 255, 0.6));
+
+            // Cloak
+            javafx.scene.shape.Polygon cloak = new javafx.scene.shape.Polygon(-35, 70, 35, 70, 20, -10, -20, -10);
+            cloak.setFill(new javafx.scene.paint.LinearGradient(0, 0, 0, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                    new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.web("#6a11cb")),
+                    new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.web("#2575fc"))));
+
+            // Face
+            javafx.scene.shape.Circle face = new javafx.scene.shape.Circle(0, -15, 18, javafx.scene.paint.Color.web("#ffccaa"));
+
+            // Fluffy Beard
+            javafx.scene.Group beard = new javafx.scene.Group(
+                    new javafx.scene.shape.Circle(0, 5, 20, javafx.scene.paint.Color.WHITE),
+                    new javafx.scene.shape.Circle(-15, 0, 15, javafx.scene.paint.Color.WHITE),
+                    new javafx.scene.shape.Circle(15, 0, 15, javafx.scene.paint.Color.WHITE),
+                    new javafx.scene.shape.Polygon(-25, 5, 25, 5, 0, 45) // Pointy bit
+            );
+            ((javafx.scene.shape.Polygon)beard.getChildren().get(3)).setFill(javafx.scene.paint.Color.WHITE);
+
+            // Wizard Hat
+            javafx.scene.shape.Polygon hatBrim = new javafx.scene.shape.Polygon(-40, -30, 40, -30, 0, -40);
+            hatBrim.setFill(javafx.scene.paint.Color.web("#3a0ca3"));
+            javafx.scene.shape.Polygon hatCone = new javafx.scene.shape.Polygon(-25, -35, 25, -35, 0, -90);
+            hatCone.setFill(javafx.scene.paint.Color.web("#4361ee"));
+            javafx.scene.shape.Polygon hatBend = new javafx.scene.shape.Polygon(0, -90, -30, -70, -10, -50);
+            hatBend.setFill(javafx.scene.paint.Color.web("#4361ee"));
+
+            // Staff
+            javafx.scene.shape.Rectangle staff = new javafx.scene.shape.Rectangle(35, -10, 6, 90);
+            staff.setFill(javafx.scene.paint.Color.web("#8b5a2b"));
+            staff.setArcWidth(4); staff.setArcHeight(4);
+
+            // Glowing Orb
+            javafx.scene.shape.Circle orb = new javafx.scene.shape.Circle(38, -15, 12, javafx.scene.paint.Color.web("#00ffff"));
+            orb.setEffect(new javafx.scene.effect.DropShadow(25, javafx.scene.paint.Color.CYAN));
+
+            // Orb Pulse Animation (Saved in field)
+            orbPulse = new javafx.animation.ScaleTransition(javafx.util.Duration.seconds(1), orb);
+            orbPulse.setByX(0.2); orbPulse.setByY(0.2);
+            orbPulse.setAutoReverse(true);
+            orbPulse.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            orbPulse.play();
+
+            w.getChildren().addAll(cloak, face, beard, hatBrim, hatCone, hatBend, staff, orb);
+            w.setEffect(glow);
+            return w;
+        }
+
+        // ==========================================
+        // CUSTOM VECTOR GRAPHICS FOR DRAGON
+        // ==========================================
+        private javafx.scene.Group createDragon() {
+            javafx.scene.Group d = new javafx.scene.Group();
+
+            // Main Body
+            javafx.scene.shape.Path body = new javafx.scene.shape.Path();
+            body.getElements().add(new javafx.scene.shape.MoveTo(50, 60));
+            body.getElements().add(new javafx.scene.shape.QuadCurveTo(-20, 60, -40, 20));
+            body.getElements().add(new javafx.scene.shape.QuadCurveTo(-60, -20, -100, -30));
+            body.getElements().add(new javafx.scene.shape.QuadCurveTo(-50, -10, -20, -10));
+            body.getElements().add(new javafx.scene.shape.QuadCurveTo(20, -40, 40, -50));
+            body.getElements().add(new javafx.scene.shape.QuadCurveTo(60, -30, 70, 0));
+            body.getElements().add(new javafx.scene.shape.ClosePath());
+            body.setFill(new javafx.scene.paint.LinearGradient(0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                    new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.web("#ff4b1f")),
+                    new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.web("#ff9068"))));
+
+            // Head and Snout
+            javafx.scene.shape.Polygon head = new javafx.scene.shape.Polygon(40, -45, 90, -40, 95, -20, 50, -15);
+            head.setFill(javafx.scene.paint.Color.web("#ff4b1f"));
+            javafx.scene.shape.Polygon jaw = new javafx.scene.shape.Polygon(50, -15, 90, -15, 80, 0, 55, 5);
+            jaw.setFill(javafx.scene.paint.Color.web("#d83a15"));
+
+            // Sharp Teeth
+            javafx.scene.shape.Polygon tooth1 = new javafx.scene.shape.Polygon(70, -15, 75, -5, 80, -15);
+            tooth1.setFill(javafx.scene.paint.Color.WHITE);
+            javafx.scene.shape.Polygon tooth2 = new javafx.scene.shape.Polygon(85, -15, 88, -8, 90, -15);
+            tooth2.setFill(javafx.scene.paint.Color.WHITE);
+
+            // Glowing Eye
+            javafx.scene.shape.Circle eye = new javafx.scene.shape.Circle(70, -30, 5, javafx.scene.paint.Color.web("#ffff00"));
+            eye.setEffect(new javafx.scene.effect.DropShadow(10, javafx.scene.paint.Color.YELLOW));
+            javafx.scene.shape.Circle pupil = new javafx.scene.shape.Circle(72, -30, 2, javafx.scene.paint.Color.BLACK);
+
+            // Horns
+            javafx.scene.shape.Polygon horn1 = new javafx.scene.shape.Polygon(45, -45, 30, -70, 55, -42);
+            horn1.setFill(javafx.scene.paint.Color.web("#222222"));
+            javafx.scene.shape.Polygon horn2 = new javafx.scene.shape.Polygon(55, -42, 45, -60, 65, -40);
+            horn2.setFill(javafx.scene.paint.Color.web("#333333"));
+
+            // Bat-like Wing
+            javafx.scene.shape.Path wing = new javafx.scene.shape.Path();
+            wing.getElements().add(new javafx.scene.shape.MoveTo(10, -20));
+            wing.getElements().add(new javafx.scene.shape.QuadCurveTo(-30, -100, 0, -120));
+            wing.getElements().add(new javafx.scene.shape.QuadCurveTo(20, -80, 40, -110));
+            wing.getElements().add(new javafx.scene.shape.QuadCurveTo(40, -60, 60, -70));
+            wing.getElements().add(new javafx.scene.shape.QuadCurveTo(30, -40, 30, -20));
+            wing.setFill(javafx.scene.paint.Color.web("#7a0010"));
+            wing.setOpacity(0.95);
+            javafx.scene.Group wingGroup = new javafx.scene.Group(wing);
+
+            // Wing Flap Animation
+            wingFlap = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(400), wingGroup);
+            wingFlap.setByY(-0.7);
+            wingFlap.setAutoReverse(true);
+            wingFlap.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            wingFlap.play();
+
+            d.getChildren().addAll(wingGroup, body, jaw, head, tooth1, tooth2, horn1, horn2, eye, pupil);
+
+            // Flip the entire dragon horizontally so it faces the Wizard (left)
+            d.setScaleX(-1);
+
+            // Wrap in an outer group so external animations (like faint rotation) don't conflict with the flipped scale
+            javafx.scene.Group wrapper = new javafx.scene.Group(d);
+            wrapper.setEffect(new javafx.scene.effect.DropShadow(20, javafx.scene.paint.Color.rgb(255, 50, 0, 0.4)));
+
+            return wrapper;
+        }
+
+        private javafx.scene.layout.VBox createHealthBox(String title, String colorHex, boolean isLeft) {
+            javafx.scene.layout.VBox box = new javafx.scene.layout.VBox(5);
+            box.setAlignment(isLeft ? javafx.geometry.Pos.CENTER_LEFT : javafx.geometry.Pos.CENTER_RIGHT);
+
+            javafx.scene.control.Label name = createLabel(title, colorHex, 18, true);
+
+            javafx.scene.control.ProgressBar bar = new javafx.scene.control.ProgressBar(1.0);
+            bar.setPrefSize(250, 25);
+            bar.setStyle("-fx-accent: " + colorHex + "; -fx-control-inner-background: #333;");
+
+            box.getChildren().addAll(name, bar);
+            return box;
+        }
+
+        private javafx.scene.control.Label createLabel(String text, String hexColor, int size, boolean bold) {
+            javafx.scene.control.Label lbl = new javafx.scene.control.Label(text);
+            String weight = bold ? "bold" : "normal";
+            lbl.setStyle("-fx-text-fill: " + hexColor + "; -fx-font-family: 'SansSerif'; -fx-font-weight: " + weight + "; -fx-font-size: " + size + "px;");
+            return lbl;
+        }
+
+        private void showDamageText(String text, double x, double y, javafx.scene.paint.Color color) {
+            javafx.scene.text.Text dmgText = new javafx.scene.text.Text(text);
+            dmgText.setFont(javafx.scene.text.Font.font("Impact", 36));
+            dmgText.setFill(color);
+            dmgText.setStroke(javafx.scene.paint.Color.WHITE);
+            dmgText.setStrokeWidth(1);
+            dmgText.setX(x);
+            dmgText.setY(y);
+            arena.getChildren().add(dmgText);
+
+            javafx.animation.TranslateTransition floatUp = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(1.2), dmgText);
+            floatUp.setByY(-60);
+
+            javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(1.2), dmgText);
+            fade.setToValue(0);
+
+            javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(floatUp, fade);
+            pt.setOnFinished(e -> arena.getChildren().remove(dmgText));
+            pt.play();
         }
 
         private void notifyFinished() {
             if (finishedNotified) return;
             finishedNotified = true;
-            if (onFinished != null) {
-                try {
-                    onFinished.run();
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
+            if (onFinished != null) onFinished.run();
         }
 
         private void log(String message) {
-            battleLog.append(message + "\n");
-            battleLog.setCaretPosition(battleLog.getDocument().getLength());
+            battleLog.appendText(message + "\n");
         }
 
         private void startPlayerTurn() {
             currentState = GameState.PLAYER_TURN;
+            inputLocked = false;
             lblPhase.setText("⚔️ ATTACK PHASE: Solve for x to cast Fireball!");
-            lblPhase.setForeground(Color.CYAN);
+            lblPhase.setStyle(lblPhase.getStyle().replaceFirst("-fx-text-fill: #[a-zA-Z0-9]+;", "-fx-text-fill: #00ffff;"));
             lblTimer.setText("");
             btnAction.setText("CAST FIREBALL");
-            btnAction.setBackground(Color.CYAN);
+            btnAction.setStyle(btnAction.getStyle().replaceFirst("-fx-background-color: #[a-zA-Z0-9]+;", "-fx-background-color: #00ffff;"));
 
             int x = random.nextInt(10) + 2;
             int a = random.nextInt(6) + 2;
@@ -379,15 +557,17 @@ public class LinearEquations extends Topic {
             lblEquation.setText(a + "x " + sign + " = " + c);
 
             txtInput.setText("");
+            txtInput.setDisable(false);
             txtInput.requestFocus();
         }
 
         private void startMonsterTurn() {
             currentState = GameState.MONSTER_TURN;
+            inputLocked = false;
             lblPhase.setText("🛡️ DEFENSE PHASE: Quick! Solve to raise your Shield!");
-            lblPhase.setForeground(Color.ORANGE);
+            lblPhase.setStyle(lblPhase.getStyle().replaceFirst("-fx-text-fill: #[a-zA-Z0-9]+;", "-fx-text-fill: #ffaa00;"));
             btnAction.setText("RAISE SHIELD");
-            btnAction.setBackground(Color.ORANGE);
+            btnAction.setStyle(btnAction.getStyle().replaceFirst("-fx-background-color: #[a-zA-Z0-9]+;", "-fx-background-color: #ffaa00;"));
 
             int x = random.nextInt(10) + 2;
             int a = random.nextInt(4) + 2;
@@ -398,102 +578,192 @@ public class LinearEquations extends Topic {
             lblEquation.setText(a + "(x + " + b + ") = " + c);
 
             txtInput.setText("");
+            txtInput.setDisable(false);
             txtInput.requestFocus();
 
             timeLeft = 15;
             lblTimer.setText("⏳ Time remaining: " + timeLeft + "s");
-            defenseTimer.start();
+            defenseTimer.playFromStart();
         }
 
         private void processTurn() {
-            if (currentState == GameState.GAME_OVER) return;
+            if (currentState == GameState.GAME_OVER || inputLocked) return;
 
             String input = txtInput.getText().trim();
             if (input.isEmpty()) return;
 
             try {
                 int playerAns = Integer.parseInt(input);
+                inputLocked = true;
+                txtInput.setDisable(true);
 
                 if (currentState == GameState.PLAYER_TURN) {
-                    resolveAttack(playerAns == expectedX);
+                    handlePlayerAttack(playerAns == expectedX);
                 } else if (currentState == GameState.MONSTER_TURN) {
                     defenseTimer.stop();
-                    resolveDefense(playerAns == expectedX);
+                    handleMonsterAttack(playerAns == expectedX);
                 }
             } catch (NumberFormatException ex) {
                 log("⚠️ System Error: Enter a valid number for x!");
+                txtInput.setText("");
+                txtInput.setDisable(false);
+                inputLocked = false;
             }
         }
 
-        private void resolveAttack(boolean isCorrect) {
+        private void handlePlayerAttack(boolean isCorrect) {
+            fireball.setLayoutX(wizardNode.getLayoutX() + 45);
+            fireball.setLayoutY(wizardNode.getLayoutY() - 15);
+            fireball.setVisible(true);
+
+            javafx.animation.TranslateTransition flight = new javafx.animation.TranslateTransition(javafx.util.Duration.millis(500), fireball);
+            flight.setFromX(0); flight.setFromY(0);
+
             if (isCorrect) {
-                int damage = 20 + random.nextInt(10);
-                monsterHP -= damage;
-                log("🔥 CRITICAL HIT! Your Fireball deals " + damage + " damage to the Dragon!");
+                // Since the dragon is flipped, its body extends further to the left of its anchor
+                flight.setToX(dragonNode.getLayoutX() - wizardNode.getLayoutX() - 100);
+                flight.setToY(-10);
+                flight.setOnFinished(e -> {
+                    fireball.setVisible(false);
+
+                    // Dragon Flinch
+                    javafx.animation.ScaleTransition flinch = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(150), dragonNode);
+                    flinch.setByX(-0.1); flinch.setByY(-0.1);
+                    flinch.setAutoReverse(true);
+                    flinch.setCycleCount(2);
+                    flinch.play();
+
+                    int damage = 20 + random.nextInt(10);
+                    monsterHP -= damage;
+                    showDamageText("-" + damage, dragonNode.getLayoutX() - 50, dragonNode.getLayoutY() - 50, javafx.scene.paint.Color.ORANGE);
+
+                    log("🔥 CRITICAL HIT! Your Fireball deals " + damage + " damage to the Dragon!");
+                    updateHealthBars();
+                    checkGameOverAndProceed(GameState.PLAYER_TURN);
+                });
             } else {
-                log("💨 MISFIRE! Your math was wrong (" + expectedX + "). The spell fizzles out.");
+                flight.setToX(200);
+                flight.setToY(120); // Drops down harmlessly
+                flight.setOnFinished(e -> {
+                    fireball.setVisible(false);
+                    log("💨 MISFIRE! Your math was wrong (" + expectedX + "). The spell fizzles out.");
+                    checkGameOverAndProceed(GameState.PLAYER_TURN);
+                });
             }
-
-            updateHealthBars();
-            checkGameOver();
-
-            if (currentState != GameState.GAME_OVER) {
-                startMonsterTurn();
-            }
+            flight.play();
         }
 
-        private void resolveDefense(boolean isCorrect) {
+        private void handleMonsterAttack(boolean isCorrect) {
+            // Dragon's mouth is on its left side now
+            dragonBreath.setLayoutX(dragonNode.getLayoutX() - 70);
+            dragonBreath.setLayoutY(dragonNode.getLayoutY() - 25);
+            dragonBreath.setVisible(true);
+
             if (isCorrect) {
-                int damage = random.nextInt(5) + 1;
-                playerHP -= damage;
-                log("🛡️ SHIELD UP! You blocked the Dragon's breath! You only take " + damage + " splash damage.");
-            } else {
-                int damage = 25 + random.nextInt(15);
-                playerHP -= damage;
-                log("💥 SHIELD SHATTERED! The Dragon's breath scorches you for " + damage + " damage! (Correct x was " + expectedX + ")");
+                magicShield.setLayoutX(wizardNode.getLayoutX());
+                magicShield.setLayoutY(wizardNode.getLayoutY());
+                magicShield.setVisible(true);
             }
 
-            updateHealthBars();
-            checkGameOver();
+            javafx.animation.TranslateTransition blast = new javafx.animation.TranslateTransition(javafx.util.Duration.millis(500), dragonBreath);
+            blast.setFromX(0); blast.setFromY(0);
+            // Move left towards the wizard
+            blast.setToX(wizardNode.getLayoutX() - dragonNode.getLayoutX() + 70);
+            blast.setToY(0);
 
-            if (currentState != GameState.GAME_OVER) {
-                startPlayerTurn();
+            blast.setOnFinished(e -> {
+                dragonBreath.setVisible(false);
+
+                if (isCorrect) {
+                    javafx.animation.FadeTransition fadeShield = new javafx.animation.FadeTransition(javafx.util.Duration.millis(300), magicShield);
+                    fadeShield.setFromValue(1.0);
+                    fadeShield.setToValue(0.0);
+                    fadeShield.setOnFinished(ev -> magicShield.setVisible(false));
+                    fadeShield.play();
+
+                    int damage = random.nextInt(5) + 1;
+                    playerHP -= damage;
+                    showDamageText("BLOCKED -" + damage, wizardNode.getLayoutX() - 40, wizardNode.getLayoutY() - 70, javafx.scene.paint.Color.CYAN);
+                    log("🛡️ SHIELD UP! You blocked the Dragon's breath! You only take " + damage + " splash damage.");
+                } else {
+                    // Wizard Flinch
+                    javafx.animation.ScaleTransition flinch = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(150), wizardNode);
+                    flinch.setByX(-0.1); flinch.setByY(-0.1);
+                    flinch.setAutoReverse(true);
+                    flinch.setCycleCount(2);
+                    flinch.play();
+
+                    int damage = 25 + random.nextInt(15);
+                    playerHP -= damage;
+                    showDamageText("-" + damage, wizardNode.getLayoutX() - 20, wizardNode.getLayoutY() - 70, javafx.scene.paint.Color.RED);
+                    log("💥 SHIELD SHATTERED! The Dragon's breath scorches you for " + damage + " damage! (Correct x was " + expectedX + ")");
+                }
+
+                updateHealthBars();
+                checkGameOverAndProceed(GameState.MONSTER_TURN);
+            });
+            blast.play();
+        }
+
+        // ==========================================
+        // FAINT (DEATH) ANIMATION
+        // ==========================================
+        private void playFaintAnimation(javafx.scene.Node node, double rotationAngle) {
+            javafx.animation.FadeTransition fade = new javafx.animation.FadeTransition(javafx.util.Duration.seconds(1.5), node);
+            fade.setToValue(0.0);
+
+            javafx.animation.RotateTransition rotate = new javafx.animation.RotateTransition(javafx.util.Duration.seconds(1.5), node);
+            rotate.setByAngle(rotationAngle);
+
+            javafx.animation.TranslateTransition sink = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(1.5), node);
+            sink.setByY(100);
+
+            javafx.animation.ParallelTransition pt = new javafx.animation.ParallelTransition(fade, rotate, sink);
+            pt.play();
+        }
+
+        private void checkGameOverAndProceed(GameState justFinishedState) {
+            if (playerHP <= 0 || monsterHP <= 0) {
+                currentState = GameState.GAME_OVER;
+                defenseTimer.stop();
+                btnAction.setDisable(true);
+                lblTimer.setText("");
+
+                if (playerHP <= 0 && monsterHP <= 0) {
+                    log("💀 MUTUAL DESTRUCTION! Both you and the Dragon fall.");
+                    lblPhase.setText("DRAW! Close window to return.");
+                    wizHover.stop(); dragHover.stop(); orbPulse.stop(); wingFlap.stop();
+                    playFaintAnimation(wizardNode, -90);
+                    playFaintAnimation(dragonNode, 90);
+
+                } else if (monsterHP <= 0) {
+                    log("🏆 VICTORY! You have slain the Ancient Dragon!");
+                    lblPhase.setText("VICTORY! Close window to continue.");
+                    lblPhase.setStyle(lblPhase.getStyle().replaceFirst("-fx-text-fill: #[a-zA-Z0-9]+;", "-fx-text-fill: #00ff00;"));
+                    dragHover.stop(); wingFlap.stop();
+                    playFaintAnimation(dragonNode, 90);
+
+                } else {
+                    log("☠️ DEFEAT. The Dragon overwhelms you.");
+                    lblPhase.setText("GAME OVER! Close window to continue.");
+                    lblPhase.setStyle(lblPhase.getStyle().replaceFirst("-fx-text-fill: #[a-zA-Z0-9]+;", "-fx-text-fill: #ff0000;"));
+                    wizHover.stop(); orbPulse.stop();
+                    playFaintAnimation(wizardNode, -90);
+                }
+            } else {
+                if (justFinishedState == GameState.PLAYER_TURN) {
+                    startMonsterTurn();
+                } else {
+                    startPlayerTurn();
+                }
             }
         }
 
         private void updateHealthBars() {
             if (playerHP < 0) playerHP = 0;
             if (monsterHP < 0) monsterHP = 0;
-
-            playerHealthBar.setValue(playerHP);
-            playerHealthBar.setString(playerHP + " / 100");
-
-            monsterHealthBar.setValue(monsterHP);
-            monsterHealthBar.setString(monsterHP + " / 100");
-        }
-
-        private void checkGameOver() {
-            if (playerHP <= 0 || monsterHP <= 0) {
-                currentState = GameState.GAME_OVER;
-                defenseTimer.stop();
-                txtInput.setEnabled(false);
-                btnAction.setEnabled(false);
-                lblTimer.setText("");
-
-                if (playerHP <= 0 && monsterHP <= 0) {
-                    log("💀 MUTUAL DESTRUCTION! Both you and the Dragon fall.");
-                    lblPhase.setText("DRAW! Close window to return.");
-                } else if (monsterHP <= 0) {
-                    log("🏆 VICTORY! You have slain the Ancient Dragon!");
-                    log("You may close this window to take your Lesson Test.");
-                    lblPhase.setText("VICTORY! Close window to continue.");
-                    lblPhase.setForeground(Color.GREEN);
-                } else {
-                    log("☠️ DEFEAT. The Dragon overwhelms you.");
-                    lblPhase.setText("GAME OVER! Close window to continue.");
-                    lblPhase.setForeground(Color.RED);
-                }
-            }
+            playerHealthBar.setProgress(playerHP / 100.0);
+            monsterHealthBar.setProgress(monsterHP / 100.0);
         }
     }
 }

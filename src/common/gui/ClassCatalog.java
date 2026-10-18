@@ -42,12 +42,10 @@ public class ClassCatalog {
         classes.put("Class 7", list7);
 
         List<Entry> list8 = new ArrayList<>();
-        list8.add(topic("➗", "Rational Numbers", class8.RationalNumbers::new));
-        list8.add(topic("⚡", "Exponents", class8.Exponents::new));
+
+
         list8.add(topic("🧩", "Factorisation", class8.Factorisation::new));
         list8.add(topic("📏", "Linear Equations", class8.LinearEquations::new));
-        list8.add(topic("💰", "Percentage & Financial Maths", class8.PercentageAndFinancialMaths::new));
-        list8.add(topic("📦", "Mensuration", class8.Mensuration::new));
         classes.put("Class 8", list8);
 
         List<Entry> list9 = new ArrayList<>();
