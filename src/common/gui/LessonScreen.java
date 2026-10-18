@@ -1,0 +1,146 @@
+package common.gui;
+
+import common.LessonContent;
+import common.Topic;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+
+import java.util.List;
+
+public class LessonScreen {
+    private AppLauncher launcher;
+    private Topic topic;
+    private List<LessonContent> contentBank;
+    private int currentIndex;
+    private VBox root;
+    private Scene scene;
+
+    public LessonScreen(AppLauncher launcher, Topic topic, List<LessonContent> contentBank) {
+        this.launcher = launcher;
+        this.topic = topic;
+        this.contentBank = contentBank;
+        this.currentIndex = 0;
+    }
+
+    public Scene buildScene() {
+        root = new VBox(12);
+        root.setPadding(new Insets(20));
+        showConcept();
+
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+
+        scene = new Scene(scrollPane, 700, 550);
+        return scene;
+    }
+
+    private void showConcept() {
+        root.getChildren().clear();
+        LessonContent content = contentBank.get(currentIndex);
+
+        Label header = new Label("Lesson — " + (currentIndex + 1) + " of " + contentBank.size());
+        header.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+        Label conceptName = new Label(content.getConcept().getName());
+        conceptName.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        Label explanation = new Label(content.getExplanation());
+        explanation.setWrapText(true);
+
+        root.getChildren().addAll(header, conceptName, explanation);
+
+        if (content.getFormula() != null) {
+            Label formula = new Label("Formula: " + content.getFormula());
+            formula.setStyle("-fx-font-style: italic;");
+            root.getChildren().add(formula);
+        }
+
+        if (content.getWorkedExamples() != null && !content.getWorkedExamples().isEmpty()) {
+            Label examplesHeader = new Label("Worked Examples:");
+            examplesHeader.setStyle("-fx-font-weight: bold;");
+            root.getChildren().add(examplesHeader);
+
+            for (String example : content.getWorkedExamples()) {
+                Label exampleLabel = new Label("• " + example);
+                exampleLabel.setWrapText(true);
+                root.getChildren().add(exampleLabel);
+            }
+        }
+
+        Button previousButton = new Button("Previous");
+        previousButton.setDisable(currentIndex == 0);
+        previousButton.setOnAction(e -> handlePrevious());
+
+        Button nextButton = new Button(
+                currentIndex == contentBank.size() - 1 ? "Start Lesson Test" : "Next"
+        );
+        nextButton.setOnAction(e -> handleNext());
+
+        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10,
+                launcher.createBackButton("Your lesson progress will be lost. Go back to Topics?"),
+                previousButton, nextButton);
+        java.util.Optional<String> gameId = topic.getGameId();
+        if (gameId.isPresent()) {
+            Button playButton = new Button("🎮 Play Game");
+            playButton.setOnAction(e -> openGame(gameId.get()));
+            navigationBox.getChildren().add(playButton);
+        }
+        root.getChildren().add(navigationBox);
+    }
+
+    private void handlePrevious() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showConcept();
+        }
+    }
+
+    private void handleNext() {
+        if (currentIndex < contentBank.size() - 1) {
+            currentIndex++;
+            showConcept();
+        } else {
+            launcher.showLessonTest();
+        }
+    }
+
+    private void openGame(String gameId) {
+        common.gui.games.ArcadeGame game = resolveGame(gameId);
+        if (game == null) {
+            // Not a JavaFX arcade game: Class 8 topics open their own game window
+            topic.launchGame(() -> { });
+            return;
+        }
+        Scene lessonScene = scene;
+        launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
+    }
+
+    private common.gui.games.ArcadeGame resolveGame(String gameId) {
+        switch (gameId) {
+            case "coordinate-radar":
+                return new class10.games.CoordinateRadarGame();
+            case "root-radar":
+                return new class10.games.RootRadarGame();
+            case "ap-express":
+                return new class10.games.APExpressGame();
+            case "integer-hopper":
+                return new class7.games.IntegerHopperGame();
+            case "fraction-fisher":
+                return new class7.games.FractionFisherGame();
+            case "term-catcher":
+                return new class7.games.TermCatcherGame();
+            case "smoothie-rush":
+                return new class7.games.SmoothieRushGame();
+            case "upside-down-lights":
+                return new class9.games.UpsideDownLightsGame();
+            case "borderland-games":
+                return new class9.games.BorderlandGamesGame();
+            default:
+                return null;
+        }
+    }
+}
