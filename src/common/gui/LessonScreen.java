@@ -2,12 +2,10 @@ package common.gui;
 
 import common.LessonContent;
 import common.Topic;
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -19,11 +17,6 @@ public class LessonScreen {
     private int currentIndex;
     private VBox root;
     private Scene scene;
-    private ScrollPane scrollPane;
-
-    // Play Game button state (the topic's own game window, e.g. Exponent Tower)
-    private Button playButton;
-    private boolean gameRunning = false;
 
     public LessonScreen(AppLauncher launcher, Topic topic, List<LessonContent> contentBank) {
         this.launcher = launcher;
@@ -37,7 +30,7 @@ public class LessonScreen {
         root.setPadding(new Insets(20));
         showConcept();
 
-        scrollPane = new ScrollPane(root);
+        javafx.scene.control.ScrollPane scrollPane = new javafx.scene.control.ScrollPane(root);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
@@ -47,15 +40,6 @@ public class LessonScreen {
 
     private void showConcept() {
         root.getChildren().clear();
-
-        if (contentBank == null || contentBank.isEmpty()) {
-            root.getChildren().add(new Label("No lesson content available for this topic."));
-            Button testButton = new Button("Start Lesson Test");
-            testButton.setOnAction(e -> launcher.showLessonTest());
-            root.getChildren().add(testButton);
-            return;
-        }
-
         LessonContent content = contentBank.get(currentIndex);
 
         Label header = new Label("Lesson — " + (currentIndex + 1) + " of " + contentBank.size());
@@ -87,14 +71,6 @@ public class LessonScreen {
             }
         }
 
-        java.util.Optional<String> visualId = topic.getVisualComponentId(content.getConcept());
-        if (visualId.isPresent()) {
-            javafx.scene.Node visual = resolveVisual(visualId.get());
-            if (visual != null) {
-                root.getChildren().add(visual);
-            }
-        }
-
         Button previousButton = new Button("Previous");
         previousButton.setDisable(currentIndex == 0);
         previousButton.setOnAction(e -> handlePrevious());
@@ -104,22 +80,16 @@ public class LessonScreen {
         );
         nextButton.setOnAction(e -> handleNext());
 
-        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10, previousButton, nextButton);
-
-        playButton = null;
+        javafx.scene.layout.HBox navigationBox = new javafx.scene.layout.HBox(10,
+                launcher.createBackButton("Your lesson progress will be lost. Go back to Topics?"),
+                previousButton, nextButton);
         java.util.Optional<String> gameId = topic.getGameId();
         if (gameId.isPresent()) {
-            playButton = new Button("🎮 Play Game");
+            Button playButton = new Button("🎮 Play Game");
             playButton.setOnAction(e -> openGame(gameId.get()));
-            updatePlayButton();
             navigationBox.getChildren().add(playButton);
         }
         root.getChildren().add(navigationBox);
-
-        // Start each concept page from the top
-        if (scrollPane != null) {
-            scrollPane.setVvalue(0);
-        }
     }
 
     private void handlePrevious() {
@@ -138,66 +108,35 @@ public class LessonScreen {
         }
     }
 
-    private javafx.scene.Node resolveVisual(String visualId) {
-        switch (visualId) {
-            case "ap-common-difference-explorer":
-                return new common.gui.widgets.CommonDifferenceGame().build();
-            case "qe-parabola-explorer":
-                return new common.gui.widgets.ParabolaGame().build();
-            case "similarity-scale-explorer":
-                return new common.gui.widgets.SimilarityShapeMatchGame().build();
-            case "coordinate-geometry-explorer":
-                return new common.gui.widgets.CoordinateGeometryExplorer().build();
-            case "trig-ratio-explorer":
-                return new common.gui.widgets.TrigRatioExplorer().build();
-            case "probability-simulator":
-                return new common.gui.widgets.ProbabilitySimulator().build();
-            default:
-                return null;
-        }
-    }
-
     private void openGame(String gameId) {
-        // 1) JavaFX arcade games that swap the scene inside this window
         common.gui.games.ArcadeGame game = resolveGame(gameId);
-        if (game != null) {
-            Scene lessonScene = scene;
-            launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
+        if (game == null) {
+            // Not a JavaFX arcade game: Class 8 topics open their own game window
+            topic.launchGame(() -> { });
             return;
         }
-
-        // 2) Games that open in their own window (e.g. Class 8 "exponent-tower").
-        //    The topic launches it; we re-enable the button when the game window closes.
-        if (gameRunning) return; // don't open two game windows
-
-        gameRunning = true;
-        updatePlayButton();
-        try {
-            topic.launchGame(() -> Platform.runLater(() -> {
-                gameRunning = false;
-                updatePlayButton();
-            }));
-        } catch (Throwable t) {
-            t.printStackTrace();
-            gameRunning = false;
-            updatePlayButton();
-        }
-    }
-
-    private void updatePlayButton() {
-        if (playButton == null) return;
-        playButton.setDisable(gameRunning);
-        playButton.setText(gameRunning ? "🎮 Game running..." : "🎮 Play Game");
+        Scene lessonScene = scene;
+        launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
     }
 
     private common.gui.games.ArcadeGame resolveGame(String gameId) {
         switch (gameId) {
             case "coordinate-radar":
-                return new common.gui.games.CoordinateRadarGame();
+                return new class10.games.CoordinateRadarGame();
             case "root-radar":
-                return new common.gui.games.RootRadarGame();
+                return new class10.games.RootRadarGame();
+            case "ap-express":
+                return new class10.games.APExpressGame();
+            case "integer-hopper":
+                return new class7.games.IntegerHopperGame();
+            case "fraction-fisher":
+                return new class7.games.FractionFisherGame();
+            case "term-catcher":
+                return new class7.games.TermCatcherGame();
+            case "smoothie-rush":
+                return new class7.games.SmoothieRushGame();
             default:
-                return null; // not a scene-swap game; handled by topic.launchGame(...)
+                return null;
         }
     }
 }

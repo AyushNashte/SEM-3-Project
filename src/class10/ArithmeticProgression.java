@@ -1,9 +1,11 @@
 package class10;
 
 import common.*;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import common.LessonContent;
 
 public class ArithmeticProgression extends Topic {
@@ -299,10 +301,7 @@ public class ArithmeticProgression extends Topic {
     }
 
     @Override
-    public java.util.Optional<String> getVisualComponentId(Concept concept) {
-        if (concept == COMMON_DIFFERENCE || concept == NTH_TERM) {
-            return java.util.Optional.of("ap-common-difference-explorer");
-        }
-        return java.util.Optional.empty();
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("ap-express");
     }
 }

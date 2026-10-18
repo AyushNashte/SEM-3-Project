@@ -3,6 +3,9 @@ package common.gui;
 import common.Concept;
 import common.Topic;
 import javafx.stage.Stage;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 
 import java.util.List;
 
@@ -23,14 +26,11 @@ public class AppLauncher {
         stage.setWidth(1150);
         stage.setHeight(720);
         stage.centerOnScreen();
-        // stage.setMaximized(true);   // uncomment to start full-screen instead
         showHome();
         stage.show();
     }
 
-    // =========================
     // HOME / CLASS / TOPIC SELECTION
-    // =========================
 
     public void showHome() {
         selectedClass = null;
@@ -66,9 +66,7 @@ public class AppLauncher {
         selectTopic(selectedTopic);
     }
 
-    // =========================
     // PREREQUISITE TEST
-    // =========================
 
     public void showPrerequisiteTest() {
         PrerequisiteTestScreen screen =
@@ -77,9 +75,7 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // GETTERS
-    // =========================
 
     public Topic getTopic() {
         return topic;
@@ -89,9 +85,7 @@ public class AppLauncher {
         return stage;
     }
 
-    // =========================
     // REPORT
-    // =========================
 
     public void showReport() {
         ReportScreen screen =
@@ -100,9 +94,7 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // LESSON
-    // =========================
 
     public void showLesson() {
         LessonScreen screen =
@@ -115,19 +107,28 @@ public class AppLauncher {
         stage.setScene(screen.buildScene());
     }
 
-    // =========================
     // LESSON TEST
-    // =========================
 
     public void showLessonTest() {
         new LessonTestScreen(this, topic).show();
     }
 
-    // =========================
     // RETEST
-    // =========================
 
     public void showRetest(List<Concept> weakConcepts) {
         new RetestScreen(this, topic, weakConcepts).show();
+    }
+
+    public Button createBackButton(String warning) {
+        Button back = new Button("← Back to Topics");
+        back.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, warning, ButtonType.YES, ButtonType.NO);
+            confirm.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.YES) {
+                    showTopics();
+                }
+            });
+        });
+        return back;
     }
 }

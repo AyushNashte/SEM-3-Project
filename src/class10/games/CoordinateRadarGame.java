@@ -1,5 +1,6 @@
-package common.gui.games;
+package class10.games;
 
+import common.gui.games.ArcadeGame;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcType;

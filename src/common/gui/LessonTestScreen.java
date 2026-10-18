@@ -17,6 +17,7 @@ public class LessonTestScreen {
 
     public void show() {
         QuestionTestScreen screen = new QuestionTestScreen(
+                launcher,
                 topic.getLessonTestForDisplay(),
                 "Submit Lesson Test",
                 this::handleAnswers

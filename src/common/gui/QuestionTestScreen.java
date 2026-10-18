@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 
 public class QuestionTestScreen {
     private Test test;
+    private AppLauncher launcher;
     private String submitButtonLabel;
     private Consumer<List<Integer>> onSubmit;
 
@@ -24,7 +25,8 @@ public class QuestionTestScreen {
     private int score;
     private int streak;
 
-    public QuestionTestScreen(Test test, String submitButtonLabel, Consumer<List<Integer>> onSubmit) {
+    public QuestionTestScreen(AppLauncher launcher, Test test, String submitButtonLabel, Consumer<List<Integer>> onSubmit) {
+        this.launcher = launcher;
         this.test = test;
         this.submitButtonLabel = submitButtonLabel;
         this.onSubmit = onSubmit;
@@ -67,7 +69,9 @@ public class QuestionTestScreen {
         Button nextButton = new Button(isLast ? submitButtonLabel : "Next");
         nextButton.setOnAction(e -> handleNext(headerPrefix));
 
-        root.getChildren().addAll(scoreTracker, header, questionLabel, optionsBox, nextButton);
+        root.getChildren().addAll(
+                launcher.createBackButton("Your progress on this test will be lost. Go back to Topics?"),
+                scoreTracker, header, questionLabel, optionsBox, nextButton);
     }
 
     private void handleNext(String headerPrefix) {

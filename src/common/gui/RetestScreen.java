@@ -19,6 +19,7 @@ public class RetestScreen {
 
     public void show() {
         QuestionTestScreen screen = new QuestionTestScreen(
+                launcher,
                 topic.getRetestForDisplay(weakConcepts),
                 "Submit Retest",
                 this::handleAnswers
