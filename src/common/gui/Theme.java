@@ -2,14 +2,18 @@ package common.gui;
 
 import javafx.animation.ScaleTransition;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
@@ -69,5 +73,44 @@ public class Theme {
             grow.stop();
             shrink.playFromStart();
         });
+    }
+
+    // ---------------- NEW HELPERS (used by lesson / test / report screens) ----------------
+
+    /** Big yellow call-to-action button (Next, Check Answer, Start Test...). */
+    public static Button primaryButton(String text) {
+        Button button = new Button(text);
+        button.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #fbbf24; "
+                + "-fx-text-fill: #2b0b5e; -fx-background-radius: 24; -fx-padding: 10 28 10 28; -fx-cursor: hand;");
+        addHoverPop(button);
+        return button;
+    }
+
+    /** White rounded panel (no hover, no hand cursor) that holds content. */
+    public static void styleContentCard(Region card) {
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 20;");
+        card.setEffect(new DropShadow(14, 0, 5, Color.rgb(0, 0, 0, 0.35)));
+        card.setPadding(new Insets(28, 34, 28, 34));
+    }
+
+    /** Small translucent pill used for "Question 2 of 5", "Score: 20" etc. */
+    public static Label chip(String text) {
+        Label label = new Label(text);
+        label.setStyle("-fx-background-color: rgba(255,255,255,0.18); -fx-background-radius: 20; "
+                + "-fx-padding: 8 16 8 16; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;");
+        return label;
+    }
+
+    /** Wraps a page's content in the purple gradient + scroll pane and returns the Scene. */
+    public static Scene pageScene(Region content) {
+        StackPane background = new StackPane(content);
+        StackPane.setAlignment(content, Pos.TOP_CENTER);
+        applyBackground(background);
+
+        ScrollPane scroll = new ScrollPane(background);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        return new Scene(scroll, 1150, 720);
     }
 }
