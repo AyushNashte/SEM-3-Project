@@ -36,31 +36,23 @@ public class ClassCatalog {
         Map<String, List<Entry>> classes = new LinkedHashMap<>();
 
         List<Entry> list7 = new ArrayList<>();
-        list7.add(topic("🔢", "Integers", class7.Integers::new));
-        list7.add(topic("🍕", "Fractions & Decimals", Integers.FractionsAndDecimals::new));
-        list7.add(topic("🔤", "Algebraic Expressions", class7.AlgebraicExpressions::new));
-        list7.add(topic("⚖️", "Ratio & Proportion", class7.RatioAndProportion::new));
+        list7.add(topic("+/-", "Integers", class7.Integers::new));
+        list7.add(topic("a:b", "Ratio & Proportion", class7.RatioAndProportion::new));
         classes.put("Class 7", list7);
 
         List<Entry> list8 = new ArrayList<>();
-
-
-        list8.add(topic("🧩", "Factorisation", class8.Factorisation::new));
-        list8.add(topic("📏", "Linear Equations", class8.LinearEquations::new));
+        list8.add(topic("a(b+c)", "Factorisation", class8.Factorisation::new));
+        list8.add(topic("x=?", "Linear Equations", class8.LinearEquations::new));
         classes.put("Class 8", list8);
 
         List<Entry> list9 = new ArrayList<>();
-        list9.add(topic("♾", "Real Numbers", class9.RealNumbers::new));
-        list9.add(topic("🧮", "Polynomials", class9.Polynomials::new));
+        list9.add(topic("π", "Real Numbers", class9.RealNumbers::new));
+        list9.add(topic("x²", "Polynomials", class9.Polynomials::new));
         classes.put("Class 9", list9);
 
         List<Entry> list10 = new ArrayList<>();
-        list10.add(topic("➕", "Arithmetic Progression", class10.ArithmeticProgression::new));
-        list10.add(topic("📊", "Quadratic Equations", class10.QuadraticEquations::new));
-        list10.add(topic("🔺", "Similarity", class10.Similarity::new));
-        list10.add(topic("📍", "Coordinate Geometry", class10.CoordinateGeometry::new));
-        list10.add(topic("📐", "Trigonometry", class10.Trigonometry::new));
-        list10.add(topic("🎲", "Probability", class10.Probability::new));
+        list10.add(topic("a+d", "Arithmetic Progression", class10.ArithmeticProgression::new));
+        list10.add(topic("Δ~Δ"  , "Similarity", class10.Similarity::new));
         classes.put("Class 10", list10);
 
         return classes;

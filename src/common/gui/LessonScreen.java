@@ -85,7 +85,10 @@ public class LessonScreen {
                 previousButton, nextButton);
         java.util.Optional<String> gameId = topic.getGameId();
         if (gameId.isPresent()) {
-            Button playButton = new Button("🎮 Play Game");
+            Button playButton = new Button("Play Game");
+            javafx.scene.shape.Polygon playIcon = new javafx.scene.shape.Polygon(0, 0, 0, 14, 12, 7);
+            playIcon.setFill(javafx.scene.paint.Color.web("#16a34a"));
+            playButton.setGraphic(playIcon);
             playButton.setOnAction(e -> openGame(gameId.get()));
             navigationBox.getChildren().add(playButton);
         }
@@ -121,12 +124,10 @@ public class LessonScreen {
 
     private common.gui.games.ArcadeGame resolveGame(String gameId) {
         switch (gameId) {
-            case "coordinate-radar":
-                return new class10.games.CoordinateRadarGame();
-            case "root-radar":
-                return new class10.games.RootRadarGame();
             case "ap-express":
-                return new class10.games.APExpressGame();
+                return new class10.games.HillClimbGame();
+            case "similarity-lab":
+                return new class10.games.SimilarityDefenceGame();
             case "integer-hopper":
                 return new class7.games.IntegerHopperGame();
             case "fraction-fisher":
@@ -135,6 +136,10 @@ public class LessonScreen {
                 return new class7.games.TermCatcherGame();
             case "smoothie-rush":
                 return new class7.games.SmoothieRushGame();
+            case "upside-down-lights":
+                return new class9.games.UpsideDownLightsGame();
+            case "borderland-games":
+                return new class9.games.BorderlandGamesGame();
             default:
                 return null;
         }

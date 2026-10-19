@@ -322,4 +322,9 @@ public class Similarity extends Topic {
         }
         return java.util.Optional.empty();
     }
+
+    @Override
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("similarity-lab");
+    }
 }

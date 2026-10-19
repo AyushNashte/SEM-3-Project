@@ -19,8 +19,13 @@ public class HomeScreen {
     }
 
     public Scene buildScene() {
-        Label logo = new Label("📚");
-        logo.setStyle("-fx-font-size: 72px;");
+        Label logoText = new Label("E");
+        logoText.setStyle("-fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: #2b0b5e;");
+        StackPane logo = new StackPane(logoText);
+        logo.setMinSize(84, 84);
+        logo.setMaxSize(84, 84);
+        logo.setStyle("-fx-background-color: #fbbf24; -fx-background-radius: 22;");
+        logo.setEffect(new javafx.scene.effect.DropShadow(10, 0, 4, javafx.scene.paint.Color.rgb(0, 0, 0, 0.4)));
 
         Label title = Theme.title("EduSnap", 52);
         Label tagline = Theme.subtitle("Maths made simple for Maharashtra SSC  |  Classes 7 to 10");

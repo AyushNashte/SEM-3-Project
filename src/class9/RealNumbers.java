@@ -303,4 +303,9 @@ public class RealNumbers extends Topic {
             System.out.println(" - " + c.getName());
         }
     }
+
+    @Override
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("upside-down-lights");
+    }
 }

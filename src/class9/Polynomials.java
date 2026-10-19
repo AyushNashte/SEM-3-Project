@@ -343,4 +343,9 @@ public class Polynomials extends Topic {
             System.out.println(" - " + c.getName());
         }
     }
+
+    @Override
+    public java.util.Optional<String> getGameId() {
+        return java.util.Optional.of("borderland-games");
+    }
 }

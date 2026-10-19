@@ -54,7 +54,8 @@ public class ClassTopicsScreen {
 
     private VBox buildTopicCard(ClassCatalog.Entry entry) {
         Label emoji = new Label(entry.emoji);
-        emoji.setStyle("-fx-font-size: 40px;");
+        emoji.setStyle("-fx-font-size: 34px; -fx-font-weight: bold; -fx-text-fill: "
+                + ClassCatalog.accent(className) + ";");
 
         Label name = new Label(entry.name);
         name.setWrapText(true);
