@@ -97,6 +97,18 @@ public class AppLauncher {
     // LESSON
 
     public void showLesson() {
+        // Class 7 gets the Balbharati-style book screen; other classes keep the original lesson screen
+        if ("Class 7".equals(selectedClass)) {
+            common.gui.book.BookLessonScreen book =
+                    new common.gui.book.BookLessonScreen(
+                            this,
+                            topic,
+                            topic.getLessonContentForDisplay()
+                    );
+            stage.setScene(book.buildScene());
+            return;
+        }
+
         LessonScreen screen =
                 new LessonScreen(
                         this,

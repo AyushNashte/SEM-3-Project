@@ -172,7 +172,7 @@ public class LessonScreen {
         launcher.getStage().setScene(game.buildScene(() -> launcher.getStage().setScene(lessonScene)));
     }
 
-    private common.gui.games.ArcadeGame resolveGame(String gameId) {
+    public static common.gui.games.ArcadeGame resolveGame(String gameId) {
         switch (gameId) {
             case "ap-express":
                 return new class10.games.HillClimbGame();
