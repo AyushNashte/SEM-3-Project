@@ -1,163 +1,100 @@
 # EduSnap - Project Requirements
 
-## 1. Project Title
+## 1. Project title
 
-EduSnap - Educational Learning Assistant
+EduSnap - Adaptive Mathematics Learning App for Maharashtra SSC (Class 7 to 10)
 
-## 2. Project Objective
+## 2. Objective
 
-EduSnap is a learning assistant designed to help students understand
-difficult educational concepts in a simple and easy-to-understand way.
+Help students understand Mathematics topics properly. EduSnap checks what the student already
+knows, teaches what is missing, tests understanding, and retests weak concepts until the student
+passes.
 
-The project will focus initially on Mathematics topics for students
-from Class 7 to Class 10.
+## 3. Target users
 
-## 3. Target Users
+- Maharashtra State Board students of Class 7, 8, 9 and 10.
+- Students who learn from the Balbharati textbooks and want practice and explanations alongside them.
 
-- Class 7 to Class 10 students
-- Students who need help understanding difficult concepts
-- Students who want quick explanations while studying online
+## 4. Functional requirements
 
-## 4. Main Features
+### 4.1 Class and topic selection
+- FR1. The student chooses a class (7, 8, 9 or 10) on the home screen.
+- FR2. The student chooses a topic from that class.
 
-### 4.1 Concept Explanation
+### 4.2 Pre-requisite test
+- FR3. Each topic starts with a pre-requisite test of 5 random questions.
+- FR4. A score of 100% marks the topic **Already Mastered** and goes to the report.
+- FR5. Any lower score continues to the lesson.
 
-EduSnap should provide simple explanations for selected concepts.
+### 4.3 Lesson
+- FR6. The lesson shows one concept at a time with an explanation, an optional formula and worked examples.
+- FR7. The student can move to the previous and next concept.
+- FR8. Topics with a game show a button to play it, and the student returns to the same lesson page afterwards.
+- FR9. Class 7 lessons use a Balbharati-style page layout (cover page, "Let's learn.", "Remember :", examples, Activity, Practice Set).
 
-The explanation should:
-- Use easy-to-understand language
-- Avoid unnecessary complexity
-- Explain the concept step-by-step
+### 4.4 Lesson test and retest
+- FR10. The lesson test has 5 random questions, one multiple-choice question at a time.
+- FR11. A score of 75% or more marks the topic **Completed**.
+- FR12. A lower score lists the weak concepts, which are reviewed and then retested.
+- FR13. The retest asks about the weak concepts only and repeats until the student reaches 75%.
+- FR14. Every question is tagged with the concept it tests.
 
-### 4.2 Worked Examples
+### 4.5 Report
+- FR15. The report shows the topic, scores, number of attempts, weak concepts and final status
+  (Already Mastered, In Progress, Retest Required or Completed).
 
-EduSnap should provide examples related to the selected concept.
+### 4.6 Games
+- FR16. Each listed topic has a mini-game that practises its concepts.
+- FR17. JavaFX games share one base class (`ArcadeGame`) for timer, score, states and HUD.
 
-Examples should:
-- Show the steps clearly
-- Explain how the answer is obtained
-- Help students understand the method
+## 5. Content in the current version
 
-### 4.3 Visual Aids
+| Class | Topics in the app |
+|---|---|
+| 7 | Integers, Ratio and Proportion |
+| 8 | Factorisation, Linear Equations |
+| 9 | Real Numbers, Polynomials |
+| 10 | Arithmetic Progression, Similarity |
 
-EduSnap should provide visual aids where they help explain a concept.
+More topic classes are already written (Class 7 Algebraic Expressions, Class 10 Quadratic Equations,
+Coordinate Geometry, Trigonometry, Probability) and can be added to the app with one line in `ClassCatalog`.
 
-Visual aids may include:
-- Images
-- Diagrams
-- Graphs
-- Simple animations
+## 6. Non-functional requirements
 
-### 4.4 Quizzes
+- **Usability:** simple screens, readable text, no emoji (they render as boxes on some Windows fonts).
+- **Familiarity:** the look of lessons should resemble the Balbharati textbooks (Class 7 first).
+- **Performance:** screens open instantly; games run smoothly on a normal student laptop.
+- **Maintainability:** one shared engine, class-wise content packages, one registry (`ClassCatalog`).
+- **Portability:** runs on any computer with a JDK and the JavaFX SDK. No internet or server needed.
+- **Reliability:** question sets are randomised each attempt and scoring follows the fixed thresholds.
 
-EduSnap should provide short quizzes after explaining a concept.
+## 7. Technology constraints
 
-The quiz should:
-- Contain questions related to the selected topic
-- Provide multiple-choice answers
-- Show whether the student's answer is correct
-- Help students check their understanding
+- Java and JavaFX desktop application.
+- Styling done in Java code (no CSS files).
+- Data kept in memory only.
+- One `Main` class as the entry point.
 
-### 4.5 Mathematics Topics
+## 8. Scope
 
-The initial version should focus on important Mathematics topics
-from Class 7 to Class 10.
+**In scope (current version)**
+- Mathematics, Class 7 to 10, two topics per class.
+- Pre-requisite check, lessons, lesson test, weak-concept retest, report.
+- One mini-game per topic.
+- Balbharati-style lesson screen for Class 7.
 
-Examples include:
-- Fractions and Decimals
-- Percentage
-- Ratio and Proportion
-- Algebra
-- Linear Equations
-- Factorisation
-- Geometry
-- Pythagoras Theorem
-- Coordinate Geometry
-- Statistics
-- Probability
-- Trigonometry
-- Mensuration
+**Out of scope for now**
+- Saving progress between sessions or user accounts.
+- Other subjects.
+- Marathi-language labels.
+- Web, mobile or browser-extension versions.
 
-The exact topics will be finalized by the team.
+## 9. Planned improvements
 
-## 5. Chrome Extension Requirements
-
-The system should work through a Chrome Extension.
-
-The student should be able to:
-1. Select a concept or text while studying.
-2. Open EduSnap.
-3. Request an explanation.
-4. View the explanation and example.
-5. View an appropriate visual aid.
-6. Attempt a quiz.
-
-## 6. Backend Requirements
-
-The backend will be developed using:
-
-- Java
-- Spring Boot
-
-The backend should:
-- Receive requests from the Chrome Extension
-- Process requests
-- Retrieve educational content
-- Provide explanations and examples
-- Provide quiz questions and answers
-- Communicate with the database
-
-## 7. Database Requirements
-
-The project will use MySQL to store educational content.
-
-The database may contain information such as:
-- Classes
-- Subjects
-- Topics
-- Explanations
-- Examples
-- Quiz questions
-- Quiz options
-- Correct answers
-
-The exact database structure will be finalized during development.
-
-## 8. Non-Functional Requirements
-
-The system should be:
-
-- Easy to use
-- Simple to understand
-- Responsive
-- Organized
-- Reliable
-- Maintainable
-- Suitable for Class 7–10 students
-
-## 9. Initial Scope
-
-The first version of EduSnap will focus on:
-
-- Mathematics
-- Class 7–10
-- Concept explanations
-- Worked examples
-- Visual aids
-- Short quizzes
-- Chrome Extension integration
-- Java Spring Boot backend
-- MySQL database
-
-Additional subjects and features may be added in future versions.
-
-## 10. Future Enhancements
-
-Possible future features include:
-
-- More subjects
-- More educational topics
-- Student progress tracking
-- Personalized learning
-- Additional types of visual explanations
-- Larger question banks
+- Kahoot-style test screen (large coloured answer buttons, timer) in place of radio buttons.
+- Apply the purple theme or the Balbharati look consistently to test and report screens.
+- Extend the Balbharati look to Classes 8, 9 and 10 after the teacher's review of the Class 7 demo.
+- Images and diagrams in lessons.
+- Move Class 8 games from Swing to JavaFX.
+- List the remaining topics in the catalog.
+- Save student progress.
